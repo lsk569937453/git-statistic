@@ -18,7 +18,7 @@ import {
   MenubarRadioItem,
   MenubarTrigger,
 } from "@/components/ui/menubar"
-import { Icons } from "@/components/icons"
+import { Icons } from "@/dashboard/menu/icons"
 import { useTranslation, Trans } from "react-i18next";
 
 export function LanguageMenu() {
@@ -26,7 +26,7 @@ export function LanguageMenu() {
 
   return (
     <MenubarMenu>
-      <MenubarTrigger>{t('toolBar.language.name')}</MenubarTrigger>
+      <MenubarTrigger className="font-bold">{t('toolBar.language.name')}</MenubarTrigger>
       <MenubarContent forceMount>
         <MenubarRadioGroup value={i18n.language}>
           <MenubarRadioItem value="en" onClick={() =>i18n.changeLanguage("en")}>

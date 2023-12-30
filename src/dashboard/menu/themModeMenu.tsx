@@ -18,7 +18,7 @@ import {
   MenubarRadioItem,
   MenubarTrigger,
 } from "@/components/ui/menubar"
-import { Icons } from "@/components/icons"
+import { Icons } from "@/dashboard/menu/icons"
 import { useTranslation, Trans } from "react-i18next";
 
 export function MenuModeToggle() {
@@ -27,7 +27,7 @@ export function MenuModeToggle() {
 
   return (
     <MenubarMenu>
-      <MenubarTrigger>{t('toolBar.theme.name')}</MenubarTrigger>
+      <MenubarTrigger className="font-bold">{t('toolBar.theme.name')}</MenubarTrigger>
       <MenubarContent forceMount>
         <MenubarRadioGroup value={theme}>
           <MenubarRadioItem value="light" onClick={() => setTheme("light")}>

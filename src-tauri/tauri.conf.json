@@ -7,7 +7,8 @@
     "withGlobalTauri": false
   },
   "package": {
-    "productName": "codemagic"
+    "productName": "easy-viewer"
+    
   },
   "tauri": {
     "systemTray": {
@@ -59,7 +60,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.lsk.codemagic",
+      "identifier": "com.lsk.easyviewer",
       "longDescription": "",
       "macOS": {
         "entitlements": null,
@@ -102,7 +103,7 @@
     "windows": [
       {
         "fullscreen": false,
-        "title": "codemagic",
+        "title": "easyviewer",
         "center": true,
         "resizable": true,
         "decorations": true,

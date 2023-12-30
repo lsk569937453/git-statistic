@@ -11,14 +11,14 @@ import {
 } from "lucide-react"
 
 import { Icons } from "./icons"
-import { Button, buttonVariants } from "./ui/button"
+import { Button, buttonVariants } from "../../components/ui/button"
 import {
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "./ui/dialog"
+} from "../../components/ui/dialog"
 import { useTranslation, Trans } from "react-i18next";
 
 export function AboutDialog() {
@@ -43,12 +43,10 @@ export function AboutDialog() {
   return (
     <DialogContent className="overflow-clip pb-2">
       <DialogHeader className="flex items-center text-center">
-        {/* <div className="rounded-full bg-background p-[6px] text-slate-600 drop-shadow-none transition duration-1000 hover:text-slate-800 hover:drop-shadow-[0_0px_10px_rgba(0,10,50,0.50)] dark:hover:text-slate-400 ">
-          <Icons.logo className="h-12 w-12" />
-        </div> */}
+     
 
         <DialogTitle className="flex flex-col items-center gap-2 pt-2">
-          CodeMagic
+          EasyViewer
           <span className="flex gap-1 font-mono text-xs font-medium">
             Version {version}
 

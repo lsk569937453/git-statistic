@@ -89,31 +89,11 @@ fn main() -> Result<(), anyhow::Error> {
             base64_decode,
             base64_encode_of_image,
             base64_save_image,
-            to_cdb,
-            to_dbc,
-            url_encode,
-            url_decode,
-            get_current_timestamp,
-            format_datetime_to_timestamp,
-            format_timestamp_to_datetime,
-            digest_all,
-            get_sm2_keypair,
-            sm2_encrypt,
-            sm2_decrypt,
-            sm3_encrypt,
-            sm4_encrypt,
-            sm4_decrypt,
-            get_qrcode,
-            get_barcode,
-            export_qrcode,
-            export_barcode,
-            format_pretty_json,
-            format_pretty_yaml,
-            format_pretty_xml,
             get_about_version,
             get_menu_config,
             set_menu_index,
-            reset_menu_index
+            reset_menu_index,
+            test_url
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -2,21 +2,15 @@ import { useState } from "react"
 import { invoke } from "@tauri-apps/api/tauri"
 import './i18n';
 
-import { Menu } from "@/components/menu"
+import { Menu } from "@/dashboard/menu/menu"
 
-import { TailwindIndicator } from "./components/tailwind-indicator"
-import { ThemeProvider } from "./components/theme-provider"
+import { TailwindIndicator } from "./dashboard/menu/tailwind-indicator"
+import { ThemeProvider } from "./dashboard/menu/theme-provider"
 import DashboardPage from "./dashboard/page"
 import { cn } from "./lib/utils"
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("")
-  const [name, setName] = useState("")
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setGreetMsg(await invoke("greet", { name }))
-  }
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

@@ -12,14 +12,14 @@ import {
 } from "lucide-react"
 
 import { Icons } from "./icons"
-import { Button, buttonVariants } from "./ui/button"
+import { Button, buttonVariants } from "../../components/ui/button"
 import {
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "./ui/dialog"
+} from "../../components/ui/dialog"
 import { useTranslation, Trans } from "react-i18next";
 
 import { useToast } from "@/components/ui/use-toast"
