@@ -7,12 +7,53 @@ use crate::common_tools::base_response::BaseResponse;
 
 use crate::common_tools::database::test_url_with_error;
 use crate::common_tools::database::TestDatabaseRequest;
+use crate::common_tools::git::get_base_info_with_error;
+use crate::common_tools::git::init_git_with_error;
 use crate::common_tools::sql_lite::get_menu_config_with_error;
 use crate::common_tools::sql_lite::reset_menu_index_with_error;
 use crate::common_tools::sql_lite::set_menu_index_with_error;
 use crate::common_tools::sql_lite::GetMenuConfigReq;
 use crate::sql_lite::connection::{SqlLite, SqlLiteState};
+use num::complex::ComplexFloat;
 use tauri::State;
+#[tauri::command]
+pub fn get_base_info(state: State<SqlLiteState>) -> String {
+    match get_base_info_with_error(state) {
+        Ok(item) => {
+            let res = BaseResponse {
+                response_code: 0,
+                response_msg: item,
+            };
+            serde_json::to_string(&res).unwrap()
+        }
+        Err(e) => {
+            let res = BaseResponse {
+                response_code: 1,
+                response_msg: e.to_string(),
+            };
+            serde_json::to_string(&res).unwrap()
+        }
+    }
+}
+#[tauri::command]
+pub fn init_git(state: State<SqlLiteState>, repo_path: String) -> String {
+    match init_git_with_error(state, repo_path) {
+        Ok(item) => {
+            let res = BaseResponse {
+                response_code: 0,
+                response_msg: item,
+            };
+            serde_json::to_string(&res).unwrap()
+        }
+        Err(e) => {
+            let res = BaseResponse {
+                response_code: 1,
+                response_msg: e.to_string(),
+            };
+            serde_json::to_string(&res).unwrap()
+        }
+    }
+}
 #[tauri::command]
 pub fn base64_encode(source_string: String) -> String {
     match base64_encode_with_error(source_string) {

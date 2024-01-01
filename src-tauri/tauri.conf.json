@@ -103,7 +103,7 @@
     "windows": [
       {
         "fullscreen": false,
-        "title": "easyviewer",
+        "title": "git-statistic",
         "center": true,
         "resizable": true,
         "decorations": true,

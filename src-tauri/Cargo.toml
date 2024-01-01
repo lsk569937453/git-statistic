@@ -1,5 +1,5 @@
 [package]
-name = "easy_viewer"
+name = "git-statistic"
 version = "0.0.1"
 description = "A development tools"
 authors = ["lsk"]
@@ -38,6 +38,7 @@ num = "0.4"
 rusqlite = { version = "0.30.0", features = ["bundled"] }
 serde_repr = "0.1.17"
 sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-rustls", "mysql", "sqlite", "postgres" ] }
+git2 = {version="0.18.1",features = ["vendored-libgit2"]}
 
 [features]
 # by default Tauri runs in production mode

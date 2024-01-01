@@ -43,7 +43,7 @@
     "resetMenuIndexButtonText":"重置菜单编号"
   },
   "convertToolsPage":{
-    "base64TextTabName":"Base64文本",
+    "base64TextTabName":"通用",
     "base64ImageTabName":"Base64图片",
     "halfFullTabName":"全角/半角",
     "regexName":"正则"
