@@ -59,7 +59,7 @@ export function BaseInfoPage() {
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">总代码行数:</p>
-                        <p className="text-lg">{baseInfo?.total_lines}</p>
+                        <p className="text-lg">{baseInfo?.total_lines}--添加{baseInfo?.total_added}行,删除{baseInfo?.total_deleted}行</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">总Commit数量:</p>

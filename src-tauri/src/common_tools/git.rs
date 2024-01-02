@@ -1,4 +1,5 @@
 use crate::sql_lite::connection::{SqlLite, SqlLiteState};
+use crate::vojo::git_statistic::*;
 use chrono::Local;
 use chrono::NaiveDateTime;
 use chrono::TimeZone;
@@ -11,24 +12,11 @@ use git2::{
 use rusqlite::{params, Connection};
 use serde::Deserialize;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::Path;
 use std::time::Duration;
 use tauri::State;
-#[derive(Serialize, Deserialize, Clone)]
-
-pub struct GitBaseInfo {
-    pub project_name: String,
-    pub generate_time: String,
-    pub age: i32,
-    pub active_days: i32,
-    pub total_files: i32,
-    pub total_lines: i32,
-    pub total_added: i32,
-    pub total_deleted: i32,
-    pub total_commits: i32,
-    pub authors: i32,
-}
 pub fn get_base_info_with_error(state: State<SqlLiteState>) -> Result<GitBaseInfo, anyhow::Error> {
     let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
     let connection = &sql_lite.connection;
@@ -75,8 +63,9 @@ pub fn init_git_with_error(
     Ok(())
 }
 fn save_base_info(connections: &Connection, repo: String) -> Result<(), anyhow::Error> {
-    let base_info = analyze_base_info(repo)?;
-
+    let git_statis_info = analyze_base_info(repo)?;
+    info!("base info is {:?}", git_statis_info);
+    let base_info = git_statis_info.git_base_info;
     connections.execute(
         "insert into git_base_info (age,project_name,generate_time,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count) 
         values (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
@@ -93,7 +82,8 @@ fn save_base_info(connections: &Connection, repo: String) -> Result<(), anyhow::
     )?;
     Ok(())
 }
-fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
+fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Error> {
+    let mut git_statistic_info = GitStatisticInfo::new();
     let new_repo = Repository::open(repo_path.clone())?;
     let repo = Repository::open(repo_path.clone())?;
 
@@ -101,10 +91,6 @@ fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
     let mut revwalk = repo.revwalk()?;
     let revspec = repo.revparse_single("HEAD")?.id();
     revwalk.push(revspec)?;
-
-    // revwalk.push_head()?;
-
-    // let mut iter = revwalk.peekable();
 
     let mut total_commits = 0;
     let (mut added_total, mut deleted_total) = (0, 0);
@@ -121,7 +107,6 @@ fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
         let commit = repo.find_commit(commitx)?;
 
         let commit_cloned = commit.clone();
-        // total_commits += 1;
 
         let a = if commit.parents().len() == 1 {
             let parent = commit.parent(0)?;
@@ -132,6 +117,11 @@ fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
         if a.is_none() {
             continue;
         }
+        let commit_time = Utc
+            .timestamp_opt(commit.time().seconds(), 0)
+            .single()
+            .ok_or(anyhow!(""))?;
+        git_statistic_info.calc(commit_time);
         let author = commit_cloned.author();
         let author_name = author.name().ok_or(anyhow!("can not find name"))?;
         authors.insert(author_name.to_string());
@@ -152,7 +142,6 @@ fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
         }
         added_total += added;
         deleted_total += deleted;
-        // println!("{} insertions(+), {} deletions(-)", added, deleted);
         total_commits += 1;
     }
     let last_commit = repo.find_commit(last_commit_oid)?;
@@ -164,11 +153,7 @@ fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
     info!("first commit time is {}", first_commit_time);
     let now = Utc::now();
     let age = now.signed_duration_since(first_commit_time);
-    // println!(
-    //     "{} commits,{} added, {} removed",
-    //     total_commits, added_total, deleted_total
-    // );
-    // println!("{} lines of code", first_commit_count);
+
     let project_name = Path::new(&repo_path)
         .file_name()
         .ok_or(anyhow!(""))?
@@ -176,7 +161,7 @@ fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
         .ok_or(anyhow!(""))?
         .to_string();
     let generate_time = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-    Ok(GitBaseInfo {
+    git_statistic_info.git_base_info = GitBaseInfo {
         project_name,
         generate_time,
         age: age.num_days() as i32,
@@ -187,7 +172,9 @@ fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
         total_deleted: deleted_total,
         total_commits,
         authors: authors.len() as i32,
-    })
+    };
+
+    Ok(git_statistic_info)
 }
 fn get_lines_count(commit: Commit, repo: Repository) -> Result<i32, anyhow::Error> {
     let tree = commit.tree()?;

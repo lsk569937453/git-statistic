@@ -46,7 +46,7 @@ export function AboutDialog() {
      
 
         <DialogTitle className="flex flex-col items-center gap-2 pt-2">
-          EasyViewer
+          Git Statistic
           <span className="flex gap-1 font-mono text-xs font-medium">
             Version {version}
 
