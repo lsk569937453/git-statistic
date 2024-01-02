@@ -30,13 +30,32 @@ import { LanguageMenu } from "./languageMenu"
 import { Dialog, DialogTrigger } from "../../components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { useTranslation, Trans } from "react-i18next";
-import { CreateLinkDialog } from "./createLinkDialog"
+import { CreateLinkDialog } from "./createLinkDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { invoke } from "@tauri-apps/api/tauri";
+
+import { LoadingSpinner } from "../components/spinner";
+import { useToast } from "@/components/ui/use-toast"
+
 export function Menu() {
 
   const [showAboutDialog, setShowAboutDialog] = useState(false);
   const [showPreferenceDialog, setShowPreferenceDialog] = useState(false);
   const [showCreateLinkDialog, setShowCreateLinkDialog] = useState(false);
+  const [showLoading,setShowLoading]=useState(false);
   const { t, i18n } = useTranslation();
+  const { toast } = useToast()
+
   const buttonClick = async () => {
     const selected = await open({
       directory: true,
@@ -47,7 +66,23 @@ export function Menu() {
     } else if (selected === null) {
     } else {
     };
+    setShowLoading(true);
+    const { response_code, response_msg } = JSON.parse(await invoke("init_git", { repoPath: selected }));
+    console.log(response_code);
+    console.log(response_msg);
+    if (response_code == 0) {
+      window.location.reload() ;// 强制页面刷新
+
+    }else{
+      toast({
+        variant: "destructive",
+        title: t('toastMessage.errorMessageTile'),
+        description: t('base64ImagePage.base64ShouldNotEmptyMessageBody'),
+    })
+    }
     console.log(selected);
+    setShowLoading(false);
+
   };
   const saveHtml = () => {
     var pageHTML = document.documentElement.outerHTML;
@@ -60,8 +95,12 @@ export function Menu() {
     tempEl.click();
   }
   return (
-    <div
-    >
+    <div>
+      <AlertDialog open={showLoading} onOpenChange={setShowLoading}>
+                            <AlertDialogContent className="w-30 ">
+                                <LoadingSpinner size={48} color="indigo"/>
+                            </AlertDialogContent>
+                        </AlertDialog>
       <Menubar className="rounded-none border-b border-none pl-2 lg:pl-3">
         <MenubarMenu>
 

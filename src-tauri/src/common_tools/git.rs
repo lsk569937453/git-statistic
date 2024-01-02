@@ -58,19 +58,20 @@ pub fn init_git_with_error(
     state: State<SqlLiteState>,
     repo_path: String,
 ) -> Result<(), anyhow::Error> {
-    let repo = git2::Repository::open(repo_path)?;
+    info!("repo path is {}", repo_path);
+    // let repo = git2::Repository::open(repo_path)?;
     let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
 
     let connection = &sql_lite.connection;
-    save_base_info(connection, repo)?;
+    save_base_info(connection, repo_path.clone())?;
     Ok(())
 }
-fn save_base_info(connections: &Connection, repo: Repository) -> Result<(), anyhow::Error> {
+fn save_base_info(connections: &Connection, repo: String) -> Result<(), anyhow::Error> {
     let base_info = analyze_base_info(repo)?;
 
     connections.execute(
         "insert into git_base_info (age,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count) 
-        values (?1,?3,?4,?5,?6,?7,?8)",
+        values (?1,?2,?3,?4,?5,?6,?7,?8)",
         params![base_info.age,
             base_info.active_days,
             base_info.total_files,
@@ -82,11 +83,13 @@ fn save_base_info(connections: &Connection, repo: Repository) -> Result<(), anyh
     )?;
     Ok(())
 }
-fn analyze_base_info(repo: Repository) -> Result<GitBaseInfo, anyhow::Error> {
-    let new_repo = Repository::open(repo.path())?;
-    let total_files = get_files_count(new_repo)?;
+fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
+    let new_repo = Repository::open(repo_path.clone())?;
+    let repo = Repository::open(repo_path.clone())?;
 
+    let total_files = get_files_count(new_repo)?;
     let mut revwalk = repo.revwalk()?;
+
     revwalk.push_head()?;
 
     let mut iter = revwalk.peekable();
@@ -99,11 +102,13 @@ fn analyze_base_info(repo: Repository) -> Result<GitBaseInfo, anyhow::Error> {
     let mut total_lines_count = 0;
     let mut authors = HashSet::new();
     let mut age = chrono::Duration::zero();
+
     while let Some(commit) = iter.next() {
         let (mut added, mut deleted) = (0, 0);
         let commitx = commit?;
 
         let commit = repo.find_commit(commitx)?;
+
         let commit_cloned = commit.clone();
         let a = if commit.parents().len() == 1 {
             let parent = commit.parent(0)?;
@@ -128,7 +133,7 @@ fn analyze_base_info(repo: Repository) -> Result<GitBaseInfo, anyhow::Error> {
             }
             true
         })?;
-        let repo2 = Repository::open(".")?;
+        let repo2 = Repository::open(repo_path.clone())?;
         if total_commits == 0 {
             total_lines_count = get_lines_count(commit, repo2)?;
         }
@@ -145,6 +150,7 @@ fn analyze_base_info(repo: Repository) -> Result<GitBaseInfo, anyhow::Error> {
             age = now - first_commit_time;
         }
     }
+
     // println!(
     //     "{} commits,{} added, {} removed",
     //     total_commits, added_total, deleted_total

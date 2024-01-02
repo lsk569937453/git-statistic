@@ -1,5 +1,5 @@
 import { Textarea } from "@/components/ui/textarea"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { invoke } from "@tauri-apps/api/tauri";
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
@@ -19,44 +19,21 @@ export function Base64TextPage() {
 
     const [currentInput, setCurrentInput] = useState();
     const { toast } = useToast()
-
-    const base64Encode = async () => {
-        i18n.changeLanguage("zh");
-        if (currentInput === undefined || currentInput === "") {
-            toast({
-                variant: "destructive",
-                title: t('toastMessage.errorMessageTile'),
-                description: t('base64TextPage.sourceTextNotEmptyMessageBody'),
-            })
-            return;
-        }
-        const { response_code, response_msg } = JSON.parse(await invoke("base64_encode", { sourceString: currentInput }));
+    const [baseInfo,setBaseInfo]=useState<any>();
+    useEffect(() => {
+        loadData();
+    }, [])
+    const loadData = async () => {
+       
+        const { response_code, response_msg } = JSON.parse(await invoke("get_base_info"));
         console.log(response_code);
         console.log(response_msg);
 
         if (response_code === 0) {
-            setCurrentInput(response_msg);
+            setBaseInfo(response_msg);
         }
     }
-    const base64Decode = async () => {
-        i18n.changeLanguage("en");
-
-        if (currentInput === undefined || currentInput === "") {
-            toast({
-                variant: "destructive",
-                title: t('toastMessage.errorMessageTile'),
-                description: t('base64TextPage.sourceTextNotEmptyMessageBody'),
-            })
-            return;
-        }
-        const { response_code, response_msg } = JSON.parse(await invoke("base64_decode", { sourceString: currentInput }));
-        console.log(response_code);
-        console.log(response_msg);
-
-        if (response_code === 0) {
-            setCurrentInput(response_msg);
-        }
-    }
+    
     const handleValueChange = (e: any) => {
         setCurrentInput(e.target.value);
     }
@@ -74,23 +51,23 @@ export function Base64TextPage() {
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">项目周期:</p>
-                        <p className="text-lg">xxxxx</p>
+                        <p className="text-lg">{baseInfo?.age}</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">项目文件数量:</p>
-                        <p className="text-lg">xxxxx</p>
+                        <p className="text-lg">{baseInfo?.total_files}</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">总代码行数:</p>
-                        <p className="text-lg">xxxxx</p>
+                        <p className="text-lg">{baseInfo?.total_lines}</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">总Commit数量:</p>
-                        <p className="text-lg">xxxxx</p>
+                        <p className="text-lg">{baseInfo?.total_commits}</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">项目参与人:</p>
-                        <p className="text-lg">xxxxx</p>
+                        <p className="text-lg">{baseInfo?.authors}</p>
                     </div>
                 </CardContent>
 
