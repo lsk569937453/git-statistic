@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-import {Base64TextPage}from "./base64TextPage";
+import {BaseInfoPage}from "./baseInfoPage";
 import { Base64ImagePage } from './base64ImagePage';
 import { useTranslation, Trans } from "react-i18next";
 import {ActivityPage }from "./activityPage"
@@ -16,10 +16,10 @@ export default function Base64Page() {
         <TabsTrigger value="halftofull">{t('convertToolsPage.halfFullTabName')}</TabsTrigger>
         <TabsTrigger value="regex">{t('convertToolsPage.regexName')}</TabsTrigger>
       </TabsList>
-      <TabsContent value="text"  className="w-full h-full"><Base64TextPage/></TabsContent>
+      <TabsContent value="text"  className="w-full h-full"><BaseInfoPage/></TabsContent>
       <TabsContent value="image"  className="w-full h-full"><ActivityPage/></TabsContent>
       <TabsContent value="halftofull"  className="w-full h-full"><AuthorPage/></TabsContent>
-      <TabsContent value="regex"  className="w-full h-full"><Base64TextPage/></TabsContent>
+      <TabsContent value="regex"  className="w-full h-full"><BaseInfoPage/></TabsContent>
 
     </Tabs>
     );

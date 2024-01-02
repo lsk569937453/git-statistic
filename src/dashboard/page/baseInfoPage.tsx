@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card"
 
 
-export function Base64TextPage() {
+export function BaseInfoPage() {
     const { t, i18n } = useTranslation();
 
     const [currentInput, setCurrentInput] = useState();
@@ -43,15 +43,15 @@ export function Base64TextPage() {
                 <CardContent className="flex flex-col gap-5 text-right">
                     <div className="flex flex-row gap-10">
                         <p className="basis-2/12 text-lg font-bold">项目名称:</p>
-                        <p className="text-lg">xxxxx</p>
+                        <p className="text-lg">{baseInfo?.project_name}</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">报告生成时间:</p>
-                        <p className="text-lg">xxxxx</p>
+                        <p className="text-lg">{baseInfo?.generate_time}</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">项目周期:</p>
-                        <p className="text-lg">{baseInfo?.age}</p>
+                        <p className="text-lg">{baseInfo?.age}天</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">项目文件数量:</p>

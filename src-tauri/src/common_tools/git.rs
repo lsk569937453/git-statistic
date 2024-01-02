@@ -1,5 +1,7 @@
 use crate::sql_lite::connection::{SqlLite, SqlLiteState};
+use chrono::Local;
 use chrono::NaiveDateTime;
+use chrono::TimeZone;
 use chrono::Utc;
 use git2::Oid;
 use git2::{
@@ -10,11 +12,14 @@ use rusqlite::{params, Connection};
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashSet;
+use std::path::Path;
 use std::time::Duration;
 use tauri::State;
 #[derive(Serialize, Deserialize, Clone)]
 
 pub struct GitBaseInfo {
+    pub project_name: String,
+    pub generate_time: String,
     pub age: i32,
     pub active_days: i32,
     pub total_files: i32,
@@ -27,18 +32,20 @@ pub struct GitBaseInfo {
 pub fn get_base_info_with_error(state: State<SqlLiteState>) -> Result<GitBaseInfo, anyhow::Error> {
     let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
     let connection = &sql_lite.connection;
-    let mut statement = connection.prepare("SELECT age,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count FROM git_base_info")?;
+    let mut statement = connection.prepare("SELECT age,project_name,generate_time,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count FROM git_base_info")?;
     let rows: Vec<_> = statement
         .query_map([], |row| {
             Ok(GitBaseInfo {
                 age: row.get(0)?,
-                active_days: row.get(1)?,
-                total_files: row.get(2)?,
-                total_lines: row.get(3)?,
-                total_added: row.get(4)?,
-                total_deleted: row.get(5)?,
-                total_commits: row.get(6)?,
-                authors: row.get(7)?,
+                project_name: row.get(1)?,
+                generate_time: row.get(2)?,
+                active_days: row.get(3)?,
+                total_files: row.get(4)?,
+                total_lines: row.get(5)?,
+                total_added: row.get(6)?,
+                total_deleted: row.get(7)?,
+                total_commits: row.get(8)?,
+                authors: row.get(9)?,
             })
         })?
         .collect();
@@ -71,9 +78,11 @@ fn save_base_info(connections: &Connection, repo: String) -> Result<(), anyhow::
     let base_info = analyze_base_info(repo)?;
 
     connections.execute(
-        "insert into git_base_info (age,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count) 
-        values (?1,?2,?3,?4,?5,?6,?7,?8)",
+        "insert into git_base_info (age,project_name,generate_time,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count) 
+        values (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
         params![base_info.age,
+        base_info.project_name,
+        base_info.generate_time,
             base_info.active_days,
             base_info.total_files,
             base_info.total_lines,
@@ -104,7 +113,6 @@ fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
 
     let mut total_lines_count = 0;
     let mut authors = HashSet::new();
-    let mut age = chrono::Duration::zero();
     let mut last_commit_oid = Oid::zero();
     for commit in revwalk {
         let (mut added, mut deleted) = (0, 0);
@@ -148,19 +156,29 @@ fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
         total_commits += 1;
     }
     let last_commit = repo.find_commit(last_commit_oid)?;
+    let first_commit_time = Utc
+        .timestamp_opt(last_commit.time().seconds(), 0)
+        .single()
+        .ok_or(anyhow!(""))?;
 
-    let first_commit_time = NaiveDateTime::from_timestamp_millis(last_commit.time().seconds())
-        .ok_or(anyhow!(""))?
-        .time();
-    let now = Utc::now().time();
-    age = now - first_commit_time;
+    info!("first commit time is {}", first_commit_time);
+    let now = Utc::now();
+    let age = now.signed_duration_since(first_commit_time);
     // println!(
     //     "{} commits,{} added, {} removed",
     //     total_commits, added_total, deleted_total
     // );
     // println!("{} lines of code", first_commit_count);
-
+    let project_name = Path::new(&repo_path)
+        .file_name()
+        .ok_or(anyhow!(""))?
+        .to_str()
+        .ok_or(anyhow!(""))?
+        .to_string();
+    let generate_time = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
     Ok(GitBaseInfo {
+        project_name,
+        generate_time,
         age: age.num_days() as i32,
         active_days: age.num_weeks() as i32,
         total_files,

@@ -22,6 +22,8 @@ impl SqlLite {
         connection.execute(
             "CREATE TABLE IF NOT EXISTS git_base_info (
             id   INTEGER PRIMARY KEY AUTOINCREMENT, 
+            project_name TEXT NOT NULL, 
+            generate_time TEXT NOT NULL,
             age    INTEGER NOT NULL, 
             active_days  INTEGER NOT NULL,
             total_files_count INTEGER NOT NULL,

@@ -52,7 +52,7 @@ export function Menu() {
   const [showAboutDialog, setShowAboutDialog] = useState(false);
   const [showPreferenceDialog, setShowPreferenceDialog] = useState(false);
   const [showCreateLinkDialog, setShowCreateLinkDialog] = useState(false);
-  const [showLoading,setShowLoading]=useState(false);
+  const [showLoading, setShowLoading] = useState(false);
   const { t, i18n } = useTranslation();
   const { toast } = useToast()
 
@@ -63,7 +63,10 @@ export function Menu() {
 
     });
     if (Array.isArray(selected)) {
+      return;
+
     } else if (selected === null) {
+      return;
     } else {
     };
     setShowLoading(true);
@@ -71,14 +74,14 @@ export function Menu() {
     console.log(response_code);
     console.log(response_msg);
     if (response_code == 0) {
-      window.location.reload() ;// 强制页面刷新
+      window.location.reload();// 强制页面刷新
 
-    }else{
+    } else {
       toast({
         variant: "destructive",
         title: t('toastMessage.errorMessageTile'),
         description: t('base64ImagePage.base64ShouldNotEmptyMessageBody'),
-    })
+      })
     }
     console.log(selected);
     setShowLoading(false);
@@ -97,10 +100,10 @@ export function Menu() {
   return (
     <div>
       <AlertDialog open={showLoading} onOpenChange={setShowLoading}>
-                            <AlertDialogContent className="w-30 ">
-                                <LoadingSpinner size={48} color="indigo"/>
-                            </AlertDialogContent>
-                        </AlertDialog>
+        <AlertDialogContent className="w-30 ">
+          <LoadingSpinner size={48} color="indigo" />
+        </AlertDialogContent>
+      </AlertDialog>
       <Menubar className="rounded-none border-b border-none pl-2 lg:pl-3">
         <MenubarMenu>
 
