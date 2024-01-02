@@ -15,6 +15,11 @@ impl SqlLite {
         let db_path = home_dir.join(".git_statistic.db");
         let connection = Connection::open(db_path)?;
         connection.execute(
+            "DROP TABLE IF EXISTS git_base_info;
+        ",
+            params![],
+        )?;
+        connection.execute(
             "CREATE TABLE IF NOT EXISTS git_base_info (
             id   INTEGER PRIMARY KEY AUTOINCREMENT, 
             age    INTEGER NOT NULL, 

@@ -88,6 +88,7 @@ fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
     let repo = Repository::open(repo_path.clone())?;
 
     let total_files = get_files_count(new_repo)?;
+
     let mut revwalk = repo.revwalk()?;
 
     revwalk.push_head()?;
