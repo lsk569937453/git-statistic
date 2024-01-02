@@ -1,6 +1,7 @@
 use crate::sql_lite::connection::{SqlLite, SqlLiteState};
 use chrono::NaiveDateTime;
 use chrono::Utc;
+use git2::Oid;
 use git2::{
     Commit, DiffFormat, DiffOptions, Error, ErrorCode, ObjectType, Repository, StatusOptions,
     SubmoduleIgnore, Time, Tree, TreeWalkMode, TreeWalkResult,
@@ -88,12 +89,13 @@ fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
     let repo = Repository::open(repo_path.clone())?;
 
     let total_files = get_files_count(new_repo)?;
-
     let mut revwalk = repo.revwalk()?;
+    let revspec = repo.revparse_single("HEAD")?.id();
+    revwalk.push(revspec)?;
 
-    revwalk.push_head()?;
+    // revwalk.push_head()?;
 
-    let mut iter = revwalk.peekable();
+    // let mut iter = revwalk.peekable();
 
     let mut total_commits = 0;
     let (mut added_total, mut deleted_total) = (0, 0);
@@ -103,14 +105,16 @@ fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
     let mut total_lines_count = 0;
     let mut authors = HashSet::new();
     let mut age = chrono::Duration::zero();
-
-    while let Some(commit) = iter.next() {
+    let mut last_commit_oid = Oid::zero();
+    for commit in revwalk {
         let (mut added, mut deleted) = (0, 0);
         let commitx = commit?;
-
+        last_commit_oid = commitx;
         let commit = repo.find_commit(commitx)?;
 
         let commit_cloned = commit.clone();
+        // total_commits += 1;
+
         let a = if commit.parents().len() == 1 {
             let parent = commit.parent(0)?;
             Some(parent.tree()?)
@@ -142,16 +146,14 @@ fn analyze_base_info(repo_path: String) -> Result<GitBaseInfo, anyhow::Error> {
         deleted_total += deleted;
         // println!("{} insertions(+), {} deletions(-)", added, deleted);
         total_commits += 1;
-        if iter.next().is_none() {
-            let first_commit_time =
-                NaiveDateTime::from_timestamp_millis(commit_cloned.time().seconds())
-                    .ok_or(anyhow!(""))?
-                    .time();
-            let now = Utc::now().time();
-            age = now - first_commit_time;
-        }
     }
+    let last_commit = repo.find_commit(last_commit_oid)?;
 
+    let first_commit_time = NaiveDateTime::from_timestamp_millis(last_commit.time().seconds())
+        .ok_or(anyhow!(""))?
+        .time();
+    let now = Utc::now().time();
+    age = now - first_commit_time;
     // println!(
     //     "{} commits,{} added, {} removed",
     //     total_commits, added_total, deleted_total
