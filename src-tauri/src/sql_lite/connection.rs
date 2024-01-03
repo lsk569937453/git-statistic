@@ -16,6 +16,7 @@ impl SqlLite {
         let connection = Connection::open(db_path)?;
         connection.execute(
             "DROP TABLE IF EXISTS git_base_info;
+            DROP TABLE IF EXISTS git_commit_info);
         ",
             params![],
         )?;
@@ -32,6 +33,14 @@ impl SqlLite {
             total_deleted_count INTEGER NOT NULL,
             total_commits_count INTEGER NOT NULL,
             authors_count INTEGER NOT NULL
+            )",
+            params![],
+        )?;
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS git_commit_info (
+            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
+            quota_name TEXT NOT NULL, 
+            quota_value TEXT NOT NULL
             )",
             params![],
         )?;

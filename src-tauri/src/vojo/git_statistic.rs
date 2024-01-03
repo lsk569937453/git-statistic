@@ -39,34 +39,36 @@ impl GitBaseInfo {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct RecentWeeksCommit {
     pub commits_map: HashMap<i32, i32>,
 }
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 
 pub struct HoursOfDayCommit {
     pub commits_map: HashMap<i32, i32>,
 }
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DayOfWeekCommit {
     pub commits_map: HashMap<i32, i32>,
 }
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 
 pub struct MonthOfYearCommit {
     pub commits_map: HashMap<i32, i32>,
 }
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 
 pub struct YearAndMonthCommit {
     pub commits_map: HashMap<String, i32>,
 }
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 
 pub struct YearCommit {
     pub commits_map: HashMap<i32, i32>,
 }
+#[derive(Serialize, Deserialize, Clone)]
+
 pub struct GitStatisticInfo {
     pub git_base_info: GitBaseInfo,
     pub recent_weeks_commit: RecentWeeksCommit,

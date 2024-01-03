@@ -65,7 +65,7 @@ pub fn init_git_with_error(
 fn save_base_info(connections: &Connection, repo: String) -> Result<(), anyhow::Error> {
     let git_statis_info = analyze_base_info(repo)?;
     info!("base info is {:?}", git_statis_info);
-    let base_info = git_statis_info.git_base_info;
+    let base_info = git_statis_info.clone().git_base_info;
     connections.execute(
         "insert into git_base_info (age,project_name,generate_time,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count) 
         values (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
@@ -80,6 +80,68 @@ fn save_base_info(connections: &Connection, repo: String) -> Result<(), anyhow::
             base_info.total_commits,
             base_info.authors],
     )?;
+    save_commit_info(git_statis_info, connections)?;
+
+    Ok(())
+}
+fn save_commit_info(
+    git_statistic_info: GitStatisticInfo,
+    connections: &Connection,
+) -> Result<(), anyhow::Error> {
+    {
+        let recent_weeks_commit = git_statistic_info.clone().recent_weeks_commit;
+        let recent_weeks_commit_value = serde_json::to_string(&recent_weeks_commit)?;
+        connections.execute(
+            "insert into git_commit_info (quota_name,quota_value)
+    values (?1,?2)",
+            params!["recent_weeks_commit", recent_weeks_commit_value],
+        )?;
+    }
+    {
+        let hours_of_day_commit = git_statistic_info.clone().hours_commit;
+        let recent_weeks_commit_value = serde_json::to_string(&hours_of_day_commit)?;
+        connections.execute(
+            "insert into git_commit_info (quota_name,quota_value)
+    values (?1,?2)",
+            params!["hours_of_day_commit", recent_weeks_commit_value],
+        )?;
+    }
+    {
+        let day_of_week = git_statistic_info.clone().day_of_week_commit;
+        let recent_weeks_commit_value = serde_json::to_string(&day_of_week)?;
+        connections.execute(
+            "insert into git_commit_info (quota_name,quota_value)
+    values (?1,?2)",
+            params!["day_of_week", recent_weeks_commit_value],
+        )?;
+    }
+    {
+        let month_of_year_commit = git_statistic_info.clone().month_of_year_commit;
+        let recent_weeks_commit_value = serde_json::to_string(&month_of_year_commit)?;
+        connections.execute(
+            "insert into git_commit_info (quota_name,quota_value)
+    values (?1,?2)",
+            params!["month_of_year_commit", recent_weeks_commit_value],
+        )?;
+    }
+    {
+        let year_and_month_commit = git_statistic_info.clone().year_and_month_commit;
+        let recent_weeks_commit_value = serde_json::to_string(&year_and_month_commit)?;
+        connections.execute(
+            "insert into git_commit_info (quota_name,quota_value)
+    values (?1,?2)",
+            params!["year_and_month_commit", recent_weeks_commit_value],
+        )?;
+    }
+    {
+        let year_commit = git_statistic_info.clone().year_commit;
+        let recent_weeks_commit_value = serde_json::to_string(&year_commit)?;
+        connections.execute(
+            "insert into git_commit_info (quota_name,quota_value)
+    values (?1,?2)",
+            params!["year_commit", recent_weeks_commit_value],
+        )?;
+    }
     Ok(())
 }
 fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Error> {
@@ -107,6 +169,7 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
         let commit = repo.find_commit(commitx)?;
 
         let commit_cloned = commit.clone();
+        total_commits += 1;
 
         let a = if commit.parents().len() == 1 {
             let parent = commit.parent(0)?;
@@ -142,7 +205,6 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
         }
         added_total += added;
         deleted_total += deleted;
-        total_commits += 1;
     }
     let last_commit = repo.find_commit(last_commit_oid)?;
     let first_commit_time = Utc
