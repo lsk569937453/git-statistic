@@ -1,5 +1,6 @@
 use chrono::DateTime;
 use chrono::Datelike;
+use chrono::Local;
 use chrono::Timelike;
 use chrono::Utc;
 use core::fmt;
@@ -102,7 +103,7 @@ impl GitStatisticInfo {
             },
         }
     }
-    pub fn calc(&mut self, time: DateTime<Utc>) {
+    pub fn calc(&mut self, time: DateTime<Local>) {
         self.calc_recent_week_commits(time);
         self.calc_hours_commit(time);
         self.calc_day_of_week_commit(time);
@@ -110,13 +111,14 @@ impl GitStatisticInfo {
         self.calc_year_and_month_commit(time);
         self.calc_year_commit(time);
     }
-    fn calc_recent_week_commits(&mut self, time: DateTime<Utc>) {
-        let now = Utc::now();
+    fn calc_recent_week_commits(&mut self, time: DateTime<Local>) {
+        let now = Local::now();
         let duration = now - time;
         let week = duration.num_weeks() as i32;
         if week < 0 || week > 32 {
             return;
         }
+
         let commit_map = &mut self.recent_weeks_commit.commits_map;
         match commit_map.entry(week) {
             std::collections::hash_map::Entry::Occupied(mut e) => {
@@ -128,7 +130,7 @@ impl GitStatisticInfo {
             }
         }
     }
-    fn calc_hours_commit(&mut self, time: DateTime<Utc>) {
+    fn calc_hours_commit(&mut self, time: DateTime<Local>) {
         let hour = time.hour() as i32;
         let commit_map = &mut self.hours_commit.commits_map;
         match commit_map.entry(hour) {
@@ -141,7 +143,7 @@ impl GitStatisticInfo {
             }
         }
     }
-    fn calc_day_of_week_commit(&mut self, time: DateTime<Utc>) {
+    fn calc_day_of_week_commit(&mut self, time: DateTime<Local>) {
         let day_of_week = time.date_naive().weekday().number_from_monday() as i32;
         let commit_map = &mut self.day_of_week_commit.commits_map;
         match commit_map.entry(day_of_week) {
@@ -154,7 +156,7 @@ impl GitStatisticInfo {
             }
         }
     }
-    fn calc_month_of_year_commit(&mut self, time: DateTime<Utc>) {
+    fn calc_month_of_year_commit(&mut self, time: DateTime<Local>) {
         let month = time.month() as i32;
         let commit_map = &mut self.month_of_year_commit.commits_map;
         match commit_map.entry(month) {
@@ -167,7 +169,7 @@ impl GitStatisticInfo {
             }
         }
     }
-    fn calc_year_and_month_commit(&mut self, time: DateTime<Utc>) {
+    fn calc_year_and_month_commit(&mut self, time: DateTime<Local>) {
         let year_and_month = time.format("%Y-%m").to_string();
         let commit_map = &mut self.year_and_month_commit.commits_map;
         match commit_map.entry(year_and_month) {
@@ -180,7 +182,7 @@ impl GitStatisticInfo {
             }
         }
     }
-    fn calc_year_commit(&mut self, time: DateTime<Utc>) {
+    fn calc_year_commit(&mut self, time: DateTime<Local>) {
         let year = time.year();
         let commit_map = &mut self.year_commit.commits_map;
         match commit_map.entry(year) {

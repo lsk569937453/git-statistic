@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {BaseInfoPage}from "./baseInfoPage";
 import { Base64ImagePage } from './base64ImagePage';
 import { useTranslation, Trans } from "react-i18next";
-import {ActivityPage }from "./activityPage"
+import {ActivityPage }from "./commitPage"
 import { AuthorPage } from "./authorPage";
 export default function Base64Page() {
   const { t, i18n } = useTranslation();

@@ -8,6 +8,7 @@ use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
 use crate::common_tools::database::TestDatabaseRequest;
 use crate::common_tools::git::get_base_info_with_error;
+use crate::common_tools::git::get_commit_info_with_error;
 use crate::common_tools::git::init_git_with_error;
 use crate::common_tools::sql_lite::get_menu_config_with_error;
 use crate::common_tools::sql_lite::reset_menu_index_with_error;
@@ -19,6 +20,25 @@ use tauri::State;
 #[tauri::command]
 pub fn get_base_info(state: State<SqlLiteState>) -> String {
     match get_base_info_with_error(state) {
+        Ok(item) => {
+            let res = BaseResponse {
+                response_code: 0,
+                response_msg: item,
+            };
+            serde_json::to_string(&res).unwrap()
+        }
+        Err(e) => {
+            let res = BaseResponse {
+                response_code: 1,
+                response_msg: e.to_string(),
+            };
+            serde_json::to_string(&res).unwrap()
+        }
+    }
+}
+#[tauri::command]
+pub fn get_commit_info(state: State<SqlLiteState>) -> String {
+    match get_commit_info_with_error(state) {
         Ok(item) => {
             let res = BaseResponse {
                 response_code: 0,

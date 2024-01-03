@@ -95,7 +95,8 @@ fn main() -> Result<(), anyhow::Error> {
             reset_menu_index,
             test_url,
             get_base_info,
-            init_git
+            init_git,
+            get_commit_info
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,5 +1,6 @@
 use crate::sql_lite::connection::{SqlLite, SqlLiteState};
 use crate::vojo::git_statistic::*;
+use chrono::DateTime;
 use chrono::Local;
 use chrono::NaiveDateTime;
 use chrono::TimeZone;
@@ -40,6 +41,23 @@ pub fn get_base_info_with_error(state: State<SqlLiteState>) -> Result<GitBaseInf
     let git_base_info = rows.into_iter().next().ok_or(anyhow!(""))??;
 
     Ok(git_base_info)
+}
+pub fn get_commit_info_with_error(
+    state: State<SqlLiteState>,
+) -> Result<HashMap<String, String>, anyhow::Error> {
+    let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
+    let connection = &sql_lite.connection;
+    let mut statement = connection.prepare("SELECT quota_name,quota_value FROM git_commit_info")?;
+    let rows: Vec<_> = statement
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .collect();
+    let mut hash_map = HashMap::new();
+    for item in rows {
+        let (key, value) = item?;
+        hash_map.insert(key, value);
+    }
+
+    Ok(hash_map)
 }
 fn get_files_count(repo: Repository) -> Result<i32, anyhow::Error> {
     let index = repo.index()?;
@@ -169,7 +187,6 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
         let commit = repo.find_commit(commitx)?;
 
         let commit_cloned = commit.clone();
-        total_commits += 1;
 
         let a = if commit.parents().len() == 1 {
             let parent = commit.parent(0)?;
@@ -177,18 +194,26 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
         } else {
             None
         };
-        if a.is_none() {
-            continue;
-        }
+
         let commit_time = Utc
             .timestamp_opt(commit.time().seconds(), 0)
             .single()
             .ok_or(anyhow!(""))?;
-        git_statistic_info.calc(commit_time);
+        let converted: DateTime<Local> = DateTime::from(commit_time);
+
+        git_statistic_info.calc(converted);
         let author = commit_cloned.author();
         let author_name = author.name().ok_or(anyhow!("can not find name"))?;
         authors.insert(author_name.to_string());
 
+        let repo2 = Repository::open(repo_path.clone())?;
+        if total_commits == 0 {
+            total_lines_count = get_lines_count(commit.clone(), repo2)?;
+        }
+        total_commits += 1;
+        if a.is_none() {
+            continue;
+        }
         let b = commit.tree()?;
         let diff = repo.diff_tree_to_tree(a.as_ref(), Some(&b), Some(&mut diffopts2))?;
         diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
@@ -199,10 +224,6 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
             }
             true
         })?;
-        let repo2 = Repository::open(repo_path.clone())?;
-        if total_commits == 0 {
-            total_lines_count = get_lines_count(commit, repo2)?;
-        }
         added_total += added;
         deleted_total += deleted;
     }
