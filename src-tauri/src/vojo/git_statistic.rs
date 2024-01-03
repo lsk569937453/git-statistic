@@ -77,6 +77,17 @@ pub struct CommmitInfo {
     pub year_and_month_commit: YearAndMonthCommit,
     pub year_commit: YearCommit,
 }
+// #[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
+// pub struct AuthorStatisticInfoItem {
+//     pub author_name: String,
+//     pub total_commit: i32,
+//     pub total_added: i32,
+//     pub total_deleted: i32,
+//     pub first_commit: String,
+//     pub last_commit: String,
+//     pub age: String,
+//     pub active_days: i32,
+// }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct TotalAuthorStatisticInfoItem {
     pub author_name: String,
@@ -85,12 +96,13 @@ pub struct TotalAuthorStatisticInfoItem {
     pub total_deleted: i32,
     pub first_commit: String,
     pub last_commit: String,
-    pub age: String,
+    pub age: i32,
     pub active_days: i32,
 }
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct TotalAuthorStatisticInfo {
-    pub total_authors: Vec<TotalAuthorStatisticInfoItem>,
+    pub total_authors: HashMap<String, TotalAuthorStatisticInfoItem>,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct AuthorOfMonthStatisticInfo {
@@ -158,7 +170,7 @@ impl GitStatisticInfo {
             },
             author_statistic_info: AuthorStatisticInfo {
                 total_author_statistic_info: TotalAuthorStatisticInfo {
-                    total_authors: vec![],
+                    total_authors: HashMap::new(),
                 },
                 author_of_month_statistic_info: AuthorOfMonthStatisticInfo {
                     total_authors: vec![],
@@ -169,13 +181,21 @@ impl GitStatisticInfo {
             },
         }
     }
-    pub fn calc(&mut self, time: DateTime<Local>) {
+    pub fn calc_commit(
+        &mut self,
+        time: DateTime<Local>,
+        author: String,
+        total_added: i32,
+        total_deleted: i32,
+    ) {
         self.calc_recent_week_commits(time);
         self.calc_hours_commit(time);
         self.calc_day_of_week_commit(time);
         self.calc_month_of_year_commit(time);
         self.calc_year_and_month_commit(time);
         self.calc_year_commit(time);
+
+        self.calc_total_authors(time, author, total_added, total_deleted);
     }
     fn calc_recent_week_commits(&mut self, time: DateTime<Local>) {
         let now = Local::now();
@@ -258,6 +278,46 @@ impl GitStatisticInfo {
             }
             std::collections::hash_map::Entry::Vacant(e) => {
                 e.insert(1);
+            }
+        }
+    }
+    fn calc_total_authors(
+        &mut self,
+        time: DateTime<Local>,
+        author: String,
+        total_added: i32,
+        total_deleted: i32,
+    ) {
+        let author_hashmap = &mut self
+            .author_statistic_info
+            .total_author_statistic_info
+            .total_authors;
+
+        let commit_time = time.format("%Y-%m-%d").to_string();
+        match author_hashmap.entry(author.clone()) {
+            std::collections::hash_map::Entry::Occupied(mut e) => {
+                let data = e.get_mut();
+                data.last_commit = commit_time;
+                data.total_commit += 1;
+                data.total_added += total_added;
+                data.total_deleted += total_deleted;
+                data.active_days += 1;
+                // e.insert(data.clone());
+            }
+            std::collections::hash_map::Entry::Vacant(e) => {
+                let now = Utc::now();
+                let age = now.signed_duration_since(time);
+                let item = TotalAuthorStatisticInfoItem {
+                    author_name: author,
+                    total_commit: 1,
+                    total_added,
+                    total_deleted,
+                    first_commit: commit_time.clone(),
+                    last_commit: commit_time,
+                    age: age.num_days() as i32,
+                    active_days: 1,
+                };
+                e.insert(item);
             }
         }
     }

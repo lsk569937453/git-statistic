@@ -195,13 +195,6 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
             None
         };
 
-        let commit_time = Utc
-            .timestamp_opt(commit.time().seconds(), 0)
-            .single()
-            .ok_or(anyhow!(""))?;
-        let converted: DateTime<Local> = DateTime::from(commit_time);
-
-        git_statistic_info.calc(converted);
         let author = commit_cloned.author();
         let author_name = author.name().ok_or(anyhow!("can not find name"))?;
         authors.insert(author_name.to_string());
@@ -211,21 +204,27 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
             total_lines_count = get_lines_count(commit.clone(), repo2)?;
         }
         total_commits += 1;
-        if a.is_none() {
-            continue;
+
+        if a.is_some() {
+            let b = commit.tree()?;
+            let diff = repo.diff_tree_to_tree(a.as_ref(), Some(&b), Some(&mut diffopts2))?;
+            diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
+                if line.origin() == '+' {
+                    added += 1;
+                } else if line.origin() == '-' {
+                    deleted += 1;
+                }
+                true
+            })?;
+            added_total += added;
+            deleted_total += deleted;
         }
-        let b = commit.tree()?;
-        let diff = repo.diff_tree_to_tree(a.as_ref(), Some(&b), Some(&mut diffopts2))?;
-        diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
-            if line.origin() == '+' {
-                added += 1;
-            } else if line.origin() == '-' {
-                deleted += 1;
-            }
-            true
-        })?;
-        added_total += added;
-        deleted_total += deleted;
+        let commit_time = Utc
+            .timestamp_opt(commit.time().seconds(), 0)
+            .single()
+            .ok_or(anyhow!(""))?;
+        let converted: DateTime<Local> = DateTime::from(commit_time);
+        git_statistic_info.calc_commit(converted, author_name.to_string(), added, deleted);
     }
     let last_commit = repo.find_commit(last_commit_oid)?;
     let first_commit_time = Utc
