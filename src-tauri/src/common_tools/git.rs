@@ -82,7 +82,7 @@ pub fn init_git_with_error(
 }
 fn save_base_info(connections: &Connection, repo: String) -> Result<(), anyhow::Error> {
     let git_statis_info = analyze_base_info(repo)?;
-    info!("base info is {:?}", git_statis_info);
+    info!("base info is {}", git_statis_info);
     let base_info = git_statis_info.clone().git_base_info;
     connections.execute(
         "insert into git_base_info (age,project_name,generate_time,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count) 
@@ -107,7 +107,7 @@ fn save_commit_info(
     connections: &Connection,
 ) -> Result<(), anyhow::Error> {
     {
-        let recent_weeks_commit = git_statistic_info.clone().recent_weeks_commit;
+        let recent_weeks_commit = git_statistic_info.clone().commit_info.recent_weeks_commit;
         let recent_weeks_commit_value = serde_json::to_string(&recent_weeks_commit)?;
         connections.execute(
             "insert into git_commit_info (quota_name,quota_value)
@@ -116,7 +116,7 @@ fn save_commit_info(
         )?;
     }
     {
-        let hours_of_day_commit = git_statistic_info.clone().hours_commit;
+        let hours_of_day_commit = git_statistic_info.clone().commit_info.hours_commit;
         let recent_weeks_commit_value = serde_json::to_string(&hours_of_day_commit)?;
         connections.execute(
             "insert into git_commit_info (quota_name,quota_value)
@@ -125,7 +125,7 @@ fn save_commit_info(
         )?;
     }
     {
-        let day_of_week = git_statistic_info.clone().day_of_week_commit;
+        let day_of_week = git_statistic_info.clone().commit_info.day_of_week_commit;
         let recent_weeks_commit_value = serde_json::to_string(&day_of_week)?;
         connections.execute(
             "insert into git_commit_info (quota_name,quota_value)
@@ -134,7 +134,7 @@ fn save_commit_info(
         )?;
     }
     {
-        let month_of_year_commit = git_statistic_info.clone().month_of_year_commit;
+        let month_of_year_commit = git_statistic_info.clone().commit_info.month_of_year_commit;
         let recent_weeks_commit_value = serde_json::to_string(&month_of_year_commit)?;
         connections.execute(
             "insert into git_commit_info (quota_name,quota_value)
@@ -143,7 +143,7 @@ fn save_commit_info(
         )?;
     }
     {
-        let year_and_month_commit = git_statistic_info.clone().year_and_month_commit;
+        let year_and_month_commit = git_statistic_info.clone().commit_info.year_and_month_commit;
         let recent_weeks_commit_value = serde_json::to_string(&year_and_month_commit)?;
         connections.execute(
             "insert into git_commit_info (quota_name,quota_value)
@@ -152,7 +152,7 @@ fn save_commit_info(
         )?;
     }
     {
-        let year_commit = git_statistic_info.clone().year_commit;
+        let year_commit = git_statistic_info.clone().commit_info.year_commit;
         let recent_weeks_commit_value = serde_json::to_string(&year_commit)?;
         connections.execute(
             "insert into git_commit_info (quota_name,quota_value)

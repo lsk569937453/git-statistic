@@ -69,9 +69,7 @@ pub struct YearCommit {
     pub commits_map: HashMap<i32, i32>,
 }
 #[derive(Serialize, Deserialize, Clone)]
-
-pub struct GitStatisticInfo {
-    pub git_base_info: GitBaseInfo,
+pub struct CommmitInfo {
     pub recent_weeks_commit: RecentWeeksCommit,
     pub hours_commit: HoursOfDayCommit,
     pub day_of_week_commit: DayOfWeekCommit,
@@ -79,27 +77,95 @@ pub struct GitStatisticInfo {
     pub year_and_month_commit: YearAndMonthCommit,
     pub year_commit: YearCommit,
 }
+#[derive(Serialize, Deserialize, Clone)]
+pub struct TotalAuthorStatisticInfoItem {
+    pub author_name: String,
+    pub total_commit: i32,
+    pub total_added: i32,
+    pub total_deleted: i32,
+    pub first_commit: String,
+    pub last_commit: String,
+    pub age: String,
+    pub active_days: i32,
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct TotalAuthorStatisticInfo {
+    pub total_authors: Vec<TotalAuthorStatisticInfoItem>,
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct AuthorOfMonthStatisticInfo {
+    pub total_authors: Vec<AuthorOfMonthStatisticInfoItem>,
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct AuthorOfYearStatisticInfo {
+    pub total_authors: Vec<AuthorOfYearStatisticInfoItem>,
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct AuthorOfMonthStatisticInfoItem {
+    pub month: String,
+    pub author: String,
+    pub commit: i32,
+    pub total_commit: i32,
+    pub next_top5: String,
+    pub number_of_authors: i32,
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct AuthorOfYearStatisticInfoItem {
+    pub year: String,
+    pub author: String,
+    pub commit: i32,
+    pub total_commit: i32,
+    pub next_top5: String,
+    pub number_of_authors: i32,
+}
+#[derive(Serialize, Deserialize, Clone)]
+
+pub struct AuthorStatisticInfo {
+    pub total_author_statistic_info: TotalAuthorStatisticInfo,
+    pub author_of_month_statistic_info: AuthorOfMonthStatisticInfo,
+    pub author_of_year_statistic_info: AuthorOfYearStatisticInfo,
+}
+#[derive(Serialize, Deserialize, Clone)]
+
+pub struct GitStatisticInfo {
+    pub git_base_info: GitBaseInfo,
+    pub commit_info: CommmitInfo,
+    pub author_statistic_info: AuthorStatisticInfo,
+}
 impl GitStatisticInfo {
     pub fn new() -> Self {
         Self {
             git_base_info: GitBaseInfo::new(),
-            recent_weeks_commit: RecentWeeksCommit {
-                commits_map: HashMap::new(),
+            commit_info: CommmitInfo {
+                recent_weeks_commit: RecentWeeksCommit {
+                    commits_map: HashMap::new(),
+                },
+                hours_commit: HoursOfDayCommit {
+                    commits_map: HashMap::new(),
+                },
+                day_of_week_commit: DayOfWeekCommit {
+                    commits_map: HashMap::new(),
+                },
+                month_of_year_commit: MonthOfYearCommit {
+                    commits_map: HashMap::new(),
+                },
+                year_and_month_commit: YearAndMonthCommit {
+                    commits_map: HashMap::new(),
+                },
+                year_commit: YearCommit {
+                    commits_map: HashMap::new(),
+                },
             },
-            hours_commit: HoursOfDayCommit {
-                commits_map: HashMap::new(),
-            },
-            day_of_week_commit: DayOfWeekCommit {
-                commits_map: HashMap::new(),
-            },
-            month_of_year_commit: MonthOfYearCommit {
-                commits_map: HashMap::new(),
-            },
-            year_and_month_commit: YearAndMonthCommit {
-                commits_map: HashMap::new(),
-            },
-            year_commit: YearCommit {
-                commits_map: HashMap::new(),
+            author_statistic_info: AuthorStatisticInfo {
+                total_author_statistic_info: TotalAuthorStatisticInfo {
+                    total_authors: vec![],
+                },
+                author_of_month_statistic_info: AuthorOfMonthStatisticInfo {
+                    total_authors: vec![],
+                },
+                author_of_year_statistic_info: AuthorOfYearStatisticInfo {
+                    total_authors: vec![],
+                },
             },
         }
     }
@@ -119,7 +185,7 @@ impl GitStatisticInfo {
             return;
         }
 
-        let commit_map = &mut self.recent_weeks_commit.commits_map;
+        let commit_map = &mut self.commit_info.recent_weeks_commit.commits_map;
         match commit_map.entry(week) {
             std::collections::hash_map::Entry::Occupied(mut e) => {
                 let data = *e.get();
@@ -132,7 +198,7 @@ impl GitStatisticInfo {
     }
     fn calc_hours_commit(&mut self, time: DateTime<Local>) {
         let hour = time.hour() as i32;
-        let commit_map = &mut self.hours_commit.commits_map;
+        let commit_map = &mut self.commit_info.hours_commit.commits_map;
         match commit_map.entry(hour) {
             std::collections::hash_map::Entry::Occupied(mut e) => {
                 let data = *e.get();
@@ -145,7 +211,7 @@ impl GitStatisticInfo {
     }
     fn calc_day_of_week_commit(&mut self, time: DateTime<Local>) {
         let day_of_week = time.date_naive().weekday().number_from_monday() as i32;
-        let commit_map = &mut self.day_of_week_commit.commits_map;
+        let commit_map = &mut self.commit_info.day_of_week_commit.commits_map;
         match commit_map.entry(day_of_week) {
             std::collections::hash_map::Entry::Occupied(mut e) => {
                 let data = *e.get();
@@ -158,7 +224,7 @@ impl GitStatisticInfo {
     }
     fn calc_month_of_year_commit(&mut self, time: DateTime<Local>) {
         let month = time.month() as i32;
-        let commit_map = &mut self.month_of_year_commit.commits_map;
+        let commit_map = &mut self.commit_info.month_of_year_commit.commits_map;
         match commit_map.entry(month) {
             std::collections::hash_map::Entry::Occupied(mut e) => {
                 let data = *e.get();
@@ -171,7 +237,7 @@ impl GitStatisticInfo {
     }
     fn calc_year_and_month_commit(&mut self, time: DateTime<Local>) {
         let year_and_month = time.format("%Y-%m").to_string();
-        let commit_map = &mut self.year_and_month_commit.commits_map;
+        let commit_map = &mut self.commit_info.year_and_month_commit.commits_map;
         match commit_map.entry(year_and_month) {
             std::collections::hash_map::Entry::Occupied(mut e) => {
                 let data = *e.get();
@@ -184,7 +250,7 @@ impl GitStatisticInfo {
     }
     fn calc_year_commit(&mut self, time: DateTime<Local>) {
         let year = time.year();
-        let commit_map = &mut self.year_commit.commits_map;
+        let commit_map = &mut self.commit_info.year_commit.commits_map;
         match commit_map.entry(year) {
             std::collections::hash_map::Entry::Occupied(mut e) => {
                 let data = *e.get();
@@ -196,27 +262,9 @@ impl GitStatisticInfo {
         }
     }
 }
-impl fmt::Debug for GitStatisticInfo {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut s = f.debug_struct("GitStatisticInfo");
-        s.field("recent_weeks_commit", &self.recent_weeks_commit);
-        s.field("hours_commit", &self.hours_commit);
-        s.field("day_of_week_commit", &self.day_of_week_commit);
-        s.field("month_of_year_commit", &self.month_of_year_commit);
-        s.field("year_and_month_commit", &self.year_and_month_commit);
-        s.field("year_commit", &self.year_commit);
-        s.finish()
-    }
-}
+
 impl fmt::Display for GitStatisticInfo {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut s = f.debug_struct("GitStatisticInfo");
-        s.field("recent_weeks_commit", &self.recent_weeks_commit);
-        s.field("hours_commit", &self.hours_commit);
-        s.field("day_of_week_commit", &self.day_of_week_commit);
-        s.field("month_of_year_commit", &self.month_of_year_commit);
-        s.field("year_and_month_commit", &self.year_and_month_commit);
-        s.field("year_commit", &self.year_commit);
-        s.finish()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", serde_json::to_string(self).unwrap())
     }
 }
