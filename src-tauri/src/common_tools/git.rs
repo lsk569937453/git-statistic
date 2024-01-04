@@ -77,10 +77,10 @@ pub fn init_git_with_error(
     let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
 
     let connection = &sql_lite.connection;
-    save_base_info(connection, repo_path.clone())?;
+    save_statistic_info(connection, repo_path.clone())?;
     Ok(())
 }
-fn save_base_info(connections: &Connection, repo: String) -> Result<(), anyhow::Error> {
+fn save_statistic_info(connections: &Connection, repo: String) -> Result<(), anyhow::Error> {
     let git_statis_info = analyze_base_info(repo)?;
     info!("base info is {}", git_statis_info);
     let base_info = git_statis_info.clone().git_base_info;
@@ -98,7 +98,8 @@ fn save_base_info(connections: &Connection, repo: String) -> Result<(), anyhow::
             base_info.total_commits,
             base_info.authors],
     )?;
-    save_commit_info(git_statis_info, connections)?;
+    save_commit_info(git_statis_info.clone(), connections)?;
+    save_author_info(git_statis_info, connections)?;
 
     Ok(())
 }
@@ -113,6 +114,77 @@ fn save_commit_info(
             "insert into git_commit_info (quota_name,quota_value)
     values (?1,?2)",
             params!["recent_weeks_commit", recent_weeks_commit_value],
+        )?;
+    }
+    {
+        let hours_of_day_commit = git_statistic_info.clone().commit_info.hours_commit;
+        let recent_weeks_commit_value = serde_json::to_string(&hours_of_day_commit)?;
+        connections.execute(
+            "insert into git_commit_info (quota_name,quota_value)
+    values (?1,?2)",
+            params!["hours_of_day_commit", recent_weeks_commit_value],
+        )?;
+    }
+    {
+        let day_of_week = git_statistic_info.clone().commit_info.day_of_week_commit;
+        let recent_weeks_commit_value = serde_json::to_string(&day_of_week)?;
+        connections.execute(
+            "insert into git_commit_info (quota_name,quota_value)
+    values (?1,?2)",
+            params!["day_of_week", recent_weeks_commit_value],
+        )?;
+    }
+    {
+        let month_of_year_commit = git_statistic_info.clone().commit_info.month_of_year_commit;
+        let recent_weeks_commit_value = serde_json::to_string(&month_of_year_commit)?;
+        connections.execute(
+            "insert into git_commit_info (quota_name,quota_value)
+    values (?1,?2)",
+            params!["month_of_year_commit", recent_weeks_commit_value],
+        )?;
+    }
+    {
+        let year_and_month_commit = git_statistic_info.clone().commit_info.year_and_month_commit;
+        let recent_weeks_commit_value = serde_json::to_string(&year_and_month_commit)?;
+        connections.execute(
+            "insert into git_commit_info (quota_name,quota_value)
+    values (?1,?2)",
+            params!["year_and_month_commit", recent_weeks_commit_value],
+        )?;
+    }
+    {
+        let year_commit = git_statistic_info.clone().commit_info.year_commit;
+        let recent_weeks_commit_value = serde_json::to_string(&year_commit)?;
+        connections.execute(
+            "insert into git_commit_info (quota_name,quota_value)
+    values (?1,?2)",
+            params!["year_commit", recent_weeks_commit_value],
+        )?;
+    }
+    Ok(())
+}
+fn save_author_info(
+    git_statistic_info: GitStatisticInfo,
+    connections: &Connection,
+) -> Result<(), anyhow::Error> {
+    {
+        let git_statistic_info_cloned = git_statistic_info.clone();
+        let total_authors_statistic_info_list: Vec<_> = git_statistic_info_cloned
+            .author_statistic_info
+            .total_author_statistic_info
+            .total_authors
+            .values()
+            .clone()
+            .collect();
+        let total_authors_statistic_info_list_value =
+            serde_json::to_string(&total_authors_statistic_info_list)?;
+        connections.execute(
+            "insert into git_author_info (quota_name,quota_value)
+    values (?1,?2)",
+            params![
+                "total_authors_statistic_info",
+                total_authors_statistic_info_list_value
+            ],
         )?;
     }
     {

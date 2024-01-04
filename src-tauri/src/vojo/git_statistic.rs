@@ -106,30 +106,18 @@ pub struct TotalAuthorStatisticInfo {
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct AuthorOfMonthStatisticInfo {
-    pub total_authors: Vec<AuthorOfMonthStatisticInfoItem>,
+    pub authors_map: HashMap<String, HashMap<String, AuthorStatisticInfoItem>>,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct AuthorOfYearStatisticInfo {
-    pub total_authors: Vec<AuthorOfYearStatisticInfoItem>,
+    pub authors_map: HashMap<String, HashMap<String, AuthorStatisticInfoItem>>,
 }
 #[derive(Serialize, Deserialize, Clone)]
-pub struct AuthorOfMonthStatisticInfoItem {
-    pub month: String,
+pub struct AuthorStatisticInfoItem {
     pub author: String,
     pub commit: i32,
-    pub total_commit: i32,
-    pub next_top5: String,
-    pub number_of_authors: i32,
 }
-#[derive(Serialize, Deserialize, Clone)]
-pub struct AuthorOfYearStatisticInfoItem {
-    pub year: String,
-    pub author: String,
-    pub commit: i32,
-    pub total_commit: i32,
-    pub next_top5: String,
-    pub number_of_authors: i32,
-}
+
 #[derive(Serialize, Deserialize, Clone)]
 
 pub struct AuthorStatisticInfo {
@@ -173,10 +161,10 @@ impl GitStatisticInfo {
                     total_authors: HashMap::new(),
                 },
                 author_of_month_statistic_info: AuthorOfMonthStatisticInfo {
-                    total_authors: vec![],
+                    authors_map: HashMap::new(),
                 },
                 author_of_year_statistic_info: AuthorOfYearStatisticInfo {
-                    total_authors: vec![],
+                    authors_map: HashMap::new(),
                 },
             },
         }
@@ -195,7 +183,9 @@ impl GitStatisticInfo {
         self.calc_year_and_month_commit(time);
         self.calc_year_commit(time);
 
-        self.calc_total_authors(time, author, total_added, total_deleted);
+        self.calc_total_authors(time, author.clone(), total_added, total_deleted);
+        self.calc_month_of_year_authors(time, author.clone());
+        self.calc_year_authors(time, author);
     }
     fn calc_recent_week_commits(&mut self, time: DateTime<Local>) {
         let now = Local::now();
@@ -321,8 +311,61 @@ impl GitStatisticInfo {
             }
         }
     }
+    fn calc_month_of_year_authors(&mut self, time: DateTime<Local>, author: String) {
+        let author_hashmap = &mut self
+            .author_statistic_info
+            .author_of_month_statistic_info
+            .authors_map;
+        let data_str = time.format("%Y-%m").to_string();
+        match author_hashmap.entry(data_str.clone()) {
+            std::collections::hash_map::Entry::Occupied(mut e) => {
+                let map_value = e.get_mut();
+                map_value
+                    .entry(author.clone())
+                    .or_insert(AuthorStatisticInfoItem {
+                        author: author.clone(),
+                        commit: 0,
+                    })
+                    .commit += 1;
+            }
+            std::collections::hash_map::Entry::Vacant(e) => {
+                let mut hash_map = HashMap::new();
+                hash_map.insert(
+                    author.clone(),
+                    AuthorStatisticInfoItem { author, commit: 1 },
+                );
+                e.insert(hash_map);
+            }
+        }
+    }
+    fn calc_year_authors(&mut self, time: DateTime<Local>, author: String) {
+        let author_hashmap = &mut self
+            .author_statistic_info
+            .author_of_year_statistic_info
+            .authors_map;
+        let data_str = time.format("%Y").to_string();
+        match author_hashmap.entry(data_str.clone()) {
+            std::collections::hash_map::Entry::Occupied(mut e) => {
+                let map_value = e.get_mut();
+                map_value
+                    .entry(author.clone())
+                    .or_insert(AuthorStatisticInfoItem {
+                        author: author.clone(),
+                        commit: 0,
+                    })
+                    .commit += 1;
+            }
+            std::collections::hash_map::Entry::Vacant(e) => {
+                let mut hash_map = HashMap::new();
+                hash_map.insert(
+                    author.clone(),
+                    AuthorStatisticInfoItem { author, commit: 1 },
+                );
+                e.insert(hash_map);
+            }
+        }
+    }
 }
-
 impl fmt::Display for GitStatisticInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", serde_json::to_string(self).unwrap())
