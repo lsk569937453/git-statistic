@@ -14,12 +14,11 @@ impl SqlLite {
         let home_dir = dirs::home_dir().ok_or(anyhow!("failed to get home directory"))?;
         let db_path = home_dir.join(".git_statistic.db");
         let connection = Connection::open(db_path)?;
-        connection.execute(
+        connection.execute_batch(
             "DROP TABLE IF EXISTS git_base_info;
             DROP TABLE IF EXISTS git_commit_info;
             DROP TABLE IF EXISTS git_author_info;
         ",
-            params![],
         )?;
         connection.execute(
             "CREATE TABLE IF NOT EXISTS git_base_info (
