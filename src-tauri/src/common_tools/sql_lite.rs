@@ -1,6 +1,6 @@
-use crate::sql_lite::connection::{SqlLite, SqlLiteState};
+use crate::sql_lite::connection::SqlLiteState;
 use crate::vojo::menu_config::MenuConfig;
-use rusqlite::{params, Connection, Result};
+use rusqlite::{params, Result};
 use serde::Deserialize;
 use serde::Serialize;
 use tauri::State;
@@ -143,7 +143,7 @@ pub fn reset_menu_index_with_error(state: State<SqlLiteState>) -> Result<(), any
     let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
 
     let connection = &sql_lite.connection;
-    let mut statement =
+    let statement =
         connection.execute("update menu_config set menu_index=source_index", params![])?;
     Ok(())
 }

@@ -21,7 +21,7 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from "@/components/ui/menubar"
-import { open } from '@tauri-apps/api/dialog';
+import { open } from '@tauri-apps/plugin-dialog';
 
 import { AboutDialog } from "./about-dialog"
 import { PreferenceDialog } from "./preferenceDialog"
@@ -42,7 +42,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 
 import { LoadingSpinner } from "../components/spinner";
 import { useToast } from "@/components/ui/use-toast"

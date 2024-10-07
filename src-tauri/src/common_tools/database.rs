@@ -1,13 +1,9 @@
-use crate::vojo::common_constants::MYSQL_COMMON_URL;
-use crate::vojo::common_constants::POST_GRESQL_COMMON_URL;
-use crate::vojo::common_constants::SQLITE_COMMON_URL;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use sqlx::mysql::MySqlConnection;
 use sqlx::postgres::PgConnection;
 use sqlx::Connection;
-use sqlx::Database;
 use sqlx::SqliteConnection;
 use std::fmt::{Display, Formatter};
 

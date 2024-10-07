@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { open } from '@tauri-apps/api/dialog';
+import { open } from '@tauri-apps/plugin-dialog';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 import { Textarea } from "@/components/ui/textarea"
-import { convertFileSrc } from '@tauri-apps/api/tauri';
+import { convertFileSrc } from '@tauri-apps/api/core';
 
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import { useToast } from "@/components/ui/use-toast"
 
 import { useTranslation, Trans } from "react-i18next";

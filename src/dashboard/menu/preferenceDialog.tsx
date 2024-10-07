@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { UpdateIcon } from "@radix-ui/react-icons"
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import { Separator } from "@/components/ui/separator"
 
 import {

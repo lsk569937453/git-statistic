@@ -1,8 +1,5 @@
 use rusqlite::{params, Connection, Result};
-use std::env;
-use std::sync::Arc;
 use std::sync::Mutex;
-use std::sync::RwLock;
 pub struct SqlLite {
     pub connection: Connection,
 }

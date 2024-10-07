@@ -1,8 +1,6 @@
-use crate::common_tools::base_response::BaseResponse;
 use base64::{engine::general_purpose, Engine as _};
 use image::io::Reader as ImageReader;
-use image::{DynamicImage, ImageOutputFormat};
-use std::any;
+use image::ImageOutputFormat;
 use std::io::Cursor;
 use uuid::Uuid;
 

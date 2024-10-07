@@ -14,8 +14,7 @@ use crate::common_tools::sql_lite::get_menu_config_with_error;
 use crate::common_tools::sql_lite::reset_menu_index_with_error;
 use crate::common_tools::sql_lite::set_menu_index_with_error;
 use crate::common_tools::sql_lite::GetMenuConfigReq;
-use crate::sql_lite::connection::{SqlLite, SqlLiteState};
-use num::complex::ComplexFloat;
+use crate::sql_lite::connection::SqlLiteState;
 use tauri::State;
 #[tauri::command]
 pub fn get_base_info(state: State<SqlLiteState>) -> String {

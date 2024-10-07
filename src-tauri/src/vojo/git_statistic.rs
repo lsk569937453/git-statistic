@@ -7,10 +7,6 @@ use core::fmt;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
-use std::collections::HashSet;
-use std::path::Path;
-use std::time::Duration;
-use tauri::State;
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GitBaseInfo {
     pub project_name: String,
@@ -191,7 +187,7 @@ impl GitStatisticInfo {
         let now = Local::now();
         let duration = now - time;
         let week = duration.num_weeks() as i32;
-        if week < 0 || week > 32 {
+        if !(0..=32).contains(&week) {
             return;
         }
 

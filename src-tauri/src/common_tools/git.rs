@@ -1,22 +1,15 @@
-use crate::sql_lite::connection::{SqlLite, SqlLiteState};
+use crate::sql_lite::connection::SqlLiteState;
 use crate::vojo::git_statistic::*;
 use chrono::DateTime;
 use chrono::Local;
-use chrono::NaiveDateTime;
 use chrono::TimeZone;
 use chrono::Utc;
 use git2::Oid;
-use git2::{
-    Commit, DiffFormat, DiffOptions, Error, ErrorCode, ObjectType, Repository, StatusOptions,
-    SubmoduleIgnore, Time, Tree, TreeWalkMode, TreeWalkResult,
-};
+use git2::{Commit, DiffFormat, DiffOptions, Repository, TreeWalkMode, TreeWalkResult};
 use rusqlite::{params, Connection};
-use serde::Deserialize;
-use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::Path;
-use std::time::Duration;
 use tauri::State;
 pub fn get_base_info_with_error(state: State<SqlLiteState>) -> Result<GitBaseInfo, anyhow::Error> {
     let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
@@ -235,7 +228,7 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
     let mut total_commits = 0;
     let (mut added_total, mut deleted_total) = (0, 0);
 
-    let (mut diffopts, mut diffopts2) = (DiffOptions::new(), DiffOptions::new());
+    let (diffopts, mut diffopts2) = (DiffOptions::new(), DiffOptions::new());
 
     let mut total_lines_count = 0;
     let mut authors = HashSet::new();
