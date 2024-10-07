@@ -29,11 +29,11 @@ fn main() -> Result<(), anyhow::Error> {
     let sql_lite_state = SqlLiteState(Mutex::new(sql_lite));
     tauri::Builder::default()
         .manage(sql_lite_state)
-        .plugin(
-            tauri_plugin_log::Builder::default()
-                .level(LevelFilter::Info)
-                .build(),
-        )
+        // .plugin(
+        //     tauri_plugin_log::Builder::default()
+        //         .level(LevelFilter::Info)
+        //         .build(),
+        // )
         .on_window_event(|event| match event.event() {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 event.window().hide().unwrap();
