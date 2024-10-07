@@ -62,12 +62,12 @@ pub fn get_commit_info_with_error(
 fn get_files_count(repo: Repository) -> Result<i32, anyhow::Error> {
     let index = repo.index()?;
     let mut current_lines_count = 0;
-    for entry in index.iter() {
-        let path = entry.path;
+    for _ in index.iter() {
         current_lines_count += 1;
     }
     Ok(current_lines_count)
 }
+
 pub fn init_git_with_error(
     state: State<SqlLiteState>,
     repo_path: String,
@@ -188,50 +188,38 @@ fn save_author_info(
         )?;
     }
     {
-        let hours_of_day_commit = git_statistic_info.clone().commit_info.hours_commit;
-        let recent_weeks_commit_value = serde_json::to_string(&hours_of_day_commit)?;
+        let git_statistic_info_cloned = git_statistic_info.clone();
+        let authors_map = git_statistic_info_cloned
+            .author_statistic_info
+            .author_of_month_statistic_info
+            .authors_map;
+        let total_authors_statistic_info_list_value = serde_json::to_string(&authors_map)?;
         connections.execute(
-            "insert into git_commit_info (quota_name,quota_value)
+            "insert into git_author_info (quota_name,quota_value)
     values (?1,?2)",
-            params!["hours_of_day_commit", recent_weeks_commit_value],
+            params![
+                "author_of_month_statistic_info",
+                total_authors_statistic_info_list_value
+            ],
         )?;
     }
     {
-        let day_of_week = git_statistic_info.clone().commit_info.day_of_week_commit;
-        let recent_weeks_commit_value = serde_json::to_string(&day_of_week)?;
+        let git_statistic_info_cloned = git_statistic_info.clone();
+        let authors_map = git_statistic_info_cloned
+            .author_statistic_info
+            .author_of_year_statistic_info
+            .authors_map;
+        let total_authors_statistic_info_list_value = serde_json::to_string(&authors_map)?;
         connections.execute(
-            "insert into git_commit_info (quota_name,quota_value)
+            "insert into git_author_info (quota_name,quota_value)
     values (?1,?2)",
-            params!["day_of_week", recent_weeks_commit_value],
+            params![
+                "author_of_year_statistic_info",
+                total_authors_statistic_info_list_value
+            ],
         )?;
     }
-    {
-        let month_of_year_commit = git_statistic_info.clone().commit_info.month_of_year_commit;
-        let recent_weeks_commit_value = serde_json::to_string(&month_of_year_commit)?;
-        connections.execute(
-            "insert into git_commit_info (quota_name,quota_value)
-    values (?1,?2)",
-            params!["month_of_year_commit", recent_weeks_commit_value],
-        )?;
-    }
-    {
-        let year_and_month_commit = git_statistic_info.clone().commit_info.year_and_month_commit;
-        let recent_weeks_commit_value = serde_json::to_string(&year_and_month_commit)?;
-        connections.execute(
-            "insert into git_commit_info (quota_name,quota_value)
-    values (?1,?2)",
-            params!["year_and_month_commit", recent_weeks_commit_value],
-        )?;
-    }
-    {
-        let year_commit = git_statistic_info.clone().commit_info.year_commit;
-        let recent_weeks_commit_value = serde_json::to_string(&year_commit)?;
-        connections.execute(
-            "insert into git_commit_info (quota_name,quota_value)
-    values (?1,?2)",
-            params!["year_commit", recent_weeks_commit_value],
-        )?;
-    }
+
     Ok(())
 }
 fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Error> {
@@ -273,7 +261,7 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
 
         let repo2 = Repository::open(repo_path.clone())?;
         if total_commits == 0 {
-            total_lines_count = get_lines_count(commit.clone(), repo2)?;
+            total_lines_count = get_lines_count(commit.clone(), repo2)?.1;
         }
         total_commits += 1;
 
@@ -330,19 +318,39 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
 
     Ok(git_statistic_info)
 }
-fn get_lines_count(commit: Commit, repo: Repository) -> Result<i32, anyhow::Error> {
+fn analyze_tag(repo: Repository) -> Result<(), anyhow::Error> {
+    // let iter = repo.tag_names(Some("*"))?.iter();
+    for name in repo.tag_names(Some("*"))?.iter() {
+        let obj = repo.revparse_single(name.ok_or(anyhow!(""))?)?;
+
+        if let Some(tag) = obj.as_tag() {
+            // print_tag(tag, args);
+        } else if let Some(commit) = obj.as_commit() {
+            // print_commit(commit, name, args);
+        } else {
+            // print_name(name);
+        }
+    }
+    Ok(())
+}
+fn get_lines_count(commit: Commit, repo: Repository) -> Result<(i32, i32), anyhow::Error> {
     let tree = commit.tree()?;
-    let mut total_lines = 0;
+    let (mut total_files, mut total_lines) = (0, 0);
+
     let _ = tree.walk(TreeWalkMode::PreOrder, |_, entry| {
         if entry.kind() == Some(git2::ObjectType::Blob) {
             let obj = entry.to_object(&repo).unwrap();
             let blob = obj.as_blob().ok_or(anyhow!("erros ")).unwrap();
             let file_lines = blob.content().split(|&c| c == b'\n').count();
             total_lines += file_lines as i32;
+            total_files += 1;
         }
         TreeWalkResult::Ok
     });
 
-    println!("Total lines of code in commit: {}", total_lines);
-    Ok(total_lines)
+    println!(
+        "Total lines of code in commit: {},total files count:{}",
+        total_lines, total_files
+    );
+    Ok((total_files, total_lines))
 }
