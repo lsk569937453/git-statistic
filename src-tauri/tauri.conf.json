@@ -1,73 +1,70 @@
 {
-  "build": {
-    "beforeDevCommand": "pnpm dev",
-    "beforeBuildCommand": "pnpm build",
-    "frontendDist": "../dist",
-    "devUrl": "http://localhost:1420"
-  },
-  "bundle": {
-    "active": true,
-    "category": "DeveloperTool",
-    "copyright": "",
-    "targets": "all",
-    "externalBin": [],
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ],
-    "windows": {
-      "certificateThumbprint": null,
-      "digestAlgorithm": "sha256",
-      "timestampUrl": "",
-      "nsis": {
-        "installerIcon": "./icons/icon.ico"
-      }
+    "build": {
+        "beforeDevCommand": "pnpm dev",
+        "beforeBuildCommand": "pnpm build",
+        "frontendDist": "../dist",
+        "devUrl": "http://localhost:1420"
     },
-    "longDescription": "",
-    "macOS": {
-      "entitlements": null,
-      "exceptionDomain": "",
-      "frameworks": [],
-      "providerShortName": null,
-      "signingIdentity": null
-    },
-    "resources": [],
-    "shortDescription": "",
-    "linux": {
-      "deb": {
-        "depends": []
-      }
-    }
-  },
-  "productName": "git-statistic",
-  "mainBinaryName": "git-statistic",
-  "identifier": "com.lsk.gitstatistic",
-  "plugins": {},
-  "app": {
-    "windows": [
-      {
-        "fullscreen": false,
-        "title": "git-statistic",
-        "center": true,
-        "resizable": true,
-        "decorations": true,
-        "transparent": true,
-        "height": 920,
-        "width": 1300
-      }
-    ],
-    "withGlobalTauri": false,
-    "security": {
-      "assetProtocol": {
-        "scope": [
-          "**"
+    "bundle": {
+        "active": true,
+        "category": "DeveloperTool",
+        "copyright": "",
+        "targets": "all",
+        "externalBin": [],
+        "icon": [
+            "icons/icon.icns",
+            "icons/icon.ico"
         ],
-        "enable": true
-      },
-      "csp": null
+        "windows": {
+            "certificateThumbprint": null,
+            "digestAlgorithm": "sha256",
+            "timestampUrl": "",
+            "nsis": {
+                "installerIcon": "./icons/icon.ico"
+            }
+        },
+        "longDescription": "",
+        "macOS": {
+            "entitlements": null,
+            "exceptionDomain": "",
+            "frameworks": [],
+            "providerShortName": null,
+            "signingIdentity": null
+        },
+        "resources": [],
+        "shortDescription": "",
+        "linux": {
+            "deb": {
+                "depends": []
+            }
+        }
+    },
+    "productName": "git-statistic",
+    "mainBinaryName": "git-statistic",
+    "identifier": "com.lsk.gitstatistic",
+    "plugins": {},
+    "app": {
+        "windows": [
+            {
+                "fullscreen": false,
+                "title": "git-statistic",
+                "center": true,
+                "resizable": true,
+                "decorations": true,
+                "transparent": true,
+                "height": 920,
+                "width": 1300
+            }
+        ],
+        "withGlobalTauri": false,
+        "security": {
+            "assetProtocol": {
+                "scope": [
+                    "**"
+                ],
+                "enable": true
+            },
+            "csp": null
+        }
     }
-  }
 }
