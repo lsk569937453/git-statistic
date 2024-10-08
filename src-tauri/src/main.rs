@@ -12,7 +12,6 @@ extern crate anyhow;
 extern crate log;
 
 use crate::sql_lite::connection::{SqlLite, SqlLiteState};
-use std::time::Duration;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::MouseButton;
 use tauri::tray::MouseButtonState;
@@ -20,7 +19,6 @@ use tauri::tray::TrayIconBuilder;
 use tauri::tray::TrayIconEvent;
 
 use tauri::Manager;
-use tokio::time::sleep;
 
 fn main() -> Result<(), anyhow::Error> {
     let sql_lite = SqlLite::new()?;
@@ -43,9 +41,25 @@ fn main() -> Result<(), anyhow::Error> {
                 .build(),
         )
         .setup(|app| {
+            // // Check if the app is running as admin
+            // if !is_admin() {
+            //     // // Show a dialog informing the user
+            //     // MessageDialogBuilder::new(
+            //     //     "Permission Required",
+            //     //     "This app requires administrator privileges.",
+            //     // )
+            //     // .show(app.get_window("main").unwrap());
+            //     let ans = app
+            //         .dialog()
+            //         .message("Permission Required")
+            //         .kind(MessageDialogKind::Error)
+            //         .title("ERROR")
+            //         .blocking_show();
+            //     process::exit(1);
+            // }
             let quit = MenuItem::with_id(app, "quit".to_string(), "退出", true, None::<&str>)?;
             let show = MenuItem::with_id(app, "show".to_string(), "显示", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&quit, &show])?;
+            let menu = Menu::with_items(app, &[&show, &quit])?;
             let tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
@@ -81,11 +95,11 @@ fn main() -> Result<(), anyhow::Error> {
                     }
                 })
                 .build(app)?;
-            let main_window = app.get_webview_window("main").unwrap();
-            tauri::async_runtime::spawn(async move {
-                sleep(Duration::from_millis(500)).await;
-                main_window.show().unwrap();
-            });
+            // let main_window = app.get_webview_window("main").unwrap();
+            // tauri::async_runtime::spawn(async move {
+            //     sleep(Duration::from_millis(500)).await;
+            //     main_window.show().unwrap();
+            // });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
