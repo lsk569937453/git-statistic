@@ -41,22 +41,6 @@ fn main() -> Result<(), anyhow::Error> {
                 .build(),
         )
         .setup(|app| {
-            // // Check if the app is running as admin
-            // if !is_admin() {
-            //     // // Show a dialog informing the user
-            //     // MessageDialogBuilder::new(
-            //     //     "Permission Required",
-            //     //     "This app requires administrator privileges.",
-            //     // )
-            //     // .show(app.get_window("main").unwrap());
-            //     let ans = app
-            //         .dialog()
-            //         .message("Permission Required")
-            //         .kind(MessageDialogKind::Error)
-            //         .title("ERROR")
-            //         .blocking_show();
-            //     process::exit(1);
-            // }
             let quit = MenuItem::with_id(app, "quit".to_string(), "退出", true, None::<&str>)?;
             let show = MenuItem::with_id(app, "show".to_string(), "显示", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &quit])?;
@@ -95,11 +79,7 @@ fn main() -> Result<(), anyhow::Error> {
                     }
                 })
                 .build(app)?;
-            // let main_window = app.get_webview_window("main").unwrap();
-            // tauri::async_runtime::spawn(async move {
-            //     sleep(Duration::from_millis(500)).await;
-            //     main_window.show().unwrap();
-            // });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
