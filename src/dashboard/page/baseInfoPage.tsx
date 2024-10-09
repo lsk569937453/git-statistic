@@ -19,12 +19,12 @@ export function BaseInfoPage() {
 
     const [currentInput, setCurrentInput] = useState();
     const { toast } = useToast()
-    const [baseInfo,setBaseInfo]=useState<any>();
+    const [baseInfo, setBaseInfo] = useState<any>();
     useEffect(() => {
         loadData();
     }, [])
     const loadData = async () => {
-       
+
         const { response_code, response_msg } = JSON.parse(await invoke("get_base_info"));
         console.log(response_code);
         console.log(response_msg);
@@ -33,7 +33,7 @@ export function BaseInfoPage() {
             setBaseInfo(response_msg);
         }
     }
-    
+
     const handleValueChange = (e: any) => {
         setCurrentInput(e.target.value);
     }
@@ -59,7 +59,10 @@ export function BaseInfoPage() {
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">总代码行数:</p>
-                        <p className="text-lg">{baseInfo?.total_lines}--添加{baseInfo?.total_added}行,删除{baseInfo?.total_deleted}行</p>
+                        <p className="text-lg font-black">{baseInfo?.total_lines}--添加
+                            <p className="text-green-600 inline-block">{baseInfo?.total_added}</p>行,删除
+                            <p className="text-red-600 inline-block">{baseInfo?.total_deleted}</p>
+                            行</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">总Commit数量:</p>
