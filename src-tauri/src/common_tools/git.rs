@@ -1,4 +1,5 @@
 use crate::sql_lite::connection::SqlLiteState;
+use crate::vojo::author_of_month_response::AuthorOfMonthResponse;
 use crate::vojo::git_statistic::*;
 use chrono::DateTime;
 use chrono::Local;
@@ -41,6 +42,23 @@ pub fn get_commit_info_with_error(
     let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
     let connection = &sql_lite.connection;
     let mut statement = connection.prepare("SELECT quota_name,quota_value FROM git_commit_info")?;
+    let rows: Vec<_> = statement
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .collect();
+    let mut hash_map = HashMap::new();
+    for item in rows {
+        let (key, value) = item?;
+        hash_map.insert(key, value);
+    }
+
+    Ok(hash_map)
+}
+pub fn get_authors_info_with_error(
+    state: State<SqlLiteState>,
+) -> Result<HashMap<String, String>, anyhow::Error> {
+    let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
+    let connection = &sql_lite.connection;
+    let mut statement = connection.prepare("SELECT quota_name,quota_value FROM git_author_info")?;
     let rows: Vec<_> = statement
         .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
         .collect();
@@ -186,7 +204,9 @@ fn save_author_info(
             .author_statistic_info
             .author_of_month_statistic_info
             .authors_map;
-        let total_authors_statistic_info_list_value = serde_json::to_string(&authors_map)?;
+        let author_of_month_response = AuthorOfMonthResponse::from_hashmap(authors_map);
+        let total_authors_statistic_info_list_value =
+            serde_json::to_string(&author_of_month_response)?;
         connections.execute(
             "insert into git_author_info (quota_name,quota_value)
     values (?1,?2)",
@@ -202,7 +222,10 @@ fn save_author_info(
             .author_statistic_info
             .author_of_year_statistic_info
             .authors_map;
-        let total_authors_statistic_info_list_value = serde_json::to_string(&authors_map)?;
+        let author_of_month_response = AuthorOfMonthResponse::from_hashmap(authors_map);
+
+        let total_authors_statistic_info_list_value =
+            serde_json::to_string(&author_of_month_response)?;
         connections.execute(
             "insert into git_author_info (quota_name,quota_value)
     values (?1,?2)",

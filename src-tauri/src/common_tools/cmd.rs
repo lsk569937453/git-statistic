@@ -16,6 +16,8 @@ use crate::common_tools::sql_lite::set_menu_index_with_error;
 use crate::common_tools::sql_lite::GetMenuConfigReq;
 use crate::sql_lite::connection::SqlLiteState;
 use tauri::State;
+
+use super::git::get_authors_info_with_error;
 #[tauri::command]
 pub fn get_base_info(state: State<SqlLiteState>) -> String {
     match get_base_info_with_error(state) {
@@ -38,6 +40,25 @@ pub fn get_base_info(state: State<SqlLiteState>) -> String {
 #[tauri::command]
 pub fn get_commit_info(state: State<SqlLiteState>) -> String {
     match get_commit_info_with_error(state) {
+        Ok(item) => {
+            let res = BaseResponse {
+                response_code: 0,
+                response_msg: item,
+            };
+            serde_json::to_string(&res).unwrap()
+        }
+        Err(e) => {
+            let res = BaseResponse {
+                response_code: 1,
+                response_msg: e.to_string(),
+            };
+            serde_json::to_string(&res).unwrap()
+        }
+    }
+}
+#[tauri::command]
+pub fn get_authors_info(state: State<SqlLiteState>) -> String {
+    match get_authors_info_with_error(state) {
         Ok(item) => {
             let res = BaseResponse {
                 response_code: 0,

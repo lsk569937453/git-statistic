@@ -6,6 +6,7 @@ use chrono::Utc;
 use core::fmt;
 use serde::Deserialize;
 use serde::Serialize;
+use std::cmp::Ordering;
 use std::collections::HashMap;
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GitBaseInfo {
@@ -108,10 +109,22 @@ pub struct AuthorOfMonthStatisticInfo {
 pub struct AuthorOfYearStatisticInfo {
     pub authors_map: HashMap<String, HashMap<String, AuthorStatisticInfoItem>>,
 }
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct AuthorStatisticInfoItem {
     pub author: String,
     pub commit: i32,
+}
+// Implement Ord and PartialOrd to sort by priority
+impl Ord for AuthorStatisticInfoItem {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.commit.cmp(&other.commit) // Reverse order for max-heap
+    }
+}
+
+impl PartialOrd for AuthorStatisticInfoItem {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -283,11 +296,17 @@ impl GitStatisticInfo {
         match author_hashmap.entry(author.clone()) {
             std::collections::hash_map::Entry::Occupied(mut e) => {
                 let data = e.get_mut();
-                data.last_commit = commit_time;
+                // data.last_commit = commit_time;
                 data.total_commit += 1;
                 data.total_added += total_added;
                 data.total_deleted += total_deleted;
                 data.active_days += 1;
+                if commit_time < data.first_commit {
+                    data.first_commit = commit_time.clone();
+                }
+                if commit_time > data.last_commit {
+                    data.last_commit = commit_time;
+                }
                 // e.insert(data.clone());
             }
             std::collections::hash_map::Entry::Vacant(e) => {
