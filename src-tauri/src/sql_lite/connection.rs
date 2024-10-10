@@ -49,6 +49,14 @@ impl SqlLite {
             )",
             params![],
         )?;
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS git_file_info (
+            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
+            quota_name TEXT NOT NULL, 
+            quota_value TEXT NOT NULL
+            )",
+            params![],
+        )?;
 
         Ok(SqlLite { connection })
     }

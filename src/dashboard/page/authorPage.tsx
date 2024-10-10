@@ -250,7 +250,7 @@ export function AuthorPage() {
 
                                     <TableHead className="text-center text-blue-500 font-black border-y	border-black ">Commits</TableHead>
                                     <TableHead className="text-center text-black-500 font-black border-y	border-black ">Next Top5</TableHead>
-                                    <TableHead className="text-center text-blue-500 font-black border-y	border-black ">Number Of Authors</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-black border-y border-r	border-black ">Number Of Authors</TableHead>
 
 
 
@@ -275,7 +275,7 @@ export function AuthorPage() {
 
                                     <TableHead className="text-center text-blue-500 font-black border-y	border-black ">Commits</TableHead>
                                     <TableHead className="text-center text-black-500 font-black border-y	border-black ">Next Top5</TableHead>
-                                    <TableHead className="text-center text-blue-500 font-black border-y	border-black ">Number Of Authors</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-black border-y border-r	border-black ">Number Of Authors</TableHead>
 
 
 

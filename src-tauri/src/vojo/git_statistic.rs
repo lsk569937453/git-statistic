@@ -136,10 +136,47 @@ pub struct AuthorStatisticInfo {
 }
 #[derive(Serialize, Deserialize, Clone)]
 
+pub struct FileStatisticInfo {
+    pub file_statistic_base_info: FileStatisticBaseInfo,
+    pub file_statistic_extension_info: FileStatisticExtensionInfo,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+
+pub struct FileStatisticBaseInfo {
+    pub total_files_count: i32,
+    pub total_lines_count: i32,
+    pub average_file_size: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+
+pub struct FileStatisticExtensionInfo {
+    pub list: Vec<FileStatisticExtensionInfoItem>,
+}
+#[derive(Serialize, Deserialize, Clone)]
+
+pub struct FileStatisticExtensionInfoItem {
+    pub extention_name: String,
+    pub files_count: i32,
+    pub lines_count: i32,
+}
+impl FileStatisticExtensionInfoItem {
+    pub fn new(extention_name: String, files_count: i32, lines_count: i32) -> Self {
+        Self {
+            extention_name,
+            files_count,
+            lines_count,
+        }
+    }
+}
+#[derive(Serialize, Deserialize, Clone)]
+
 pub struct GitStatisticInfo {
     pub git_base_info: GitBaseInfo,
     pub commit_info: CommmitInfo,
     pub author_statistic_info: AuthorStatisticInfo,
+    pub file_statistic_info: FileStatisticInfo,
 }
 impl GitStatisticInfo {
     pub fn new() -> Self {
@@ -175,6 +212,14 @@ impl GitStatisticInfo {
                 author_of_year_statistic_info: AuthorOfYearStatisticInfo {
                     authors_map: HashMap::new(),
                 },
+            },
+            file_statistic_info: FileStatisticInfo {
+                file_statistic_base_info: FileStatisticBaseInfo {
+                    total_files_count: 0,
+                    total_lines_count: 0,
+                    average_file_size: "".to_string(),
+                },
+                file_statistic_extension_info: FileStatisticExtensionInfo { list: Vec::new() },
             },
         }
     }

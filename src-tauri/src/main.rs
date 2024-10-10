@@ -95,7 +95,8 @@ fn main() -> Result<(), anyhow::Error> {
             get_base_info,
             init_git,
             get_commit_info,
-            get_authors_info
+            get_authors_info,
+            get_files_info
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
