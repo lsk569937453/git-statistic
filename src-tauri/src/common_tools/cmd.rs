@@ -126,6 +126,7 @@ pub fn init_git(state: State<SqlLiteState>, repo_path: String) -> String {
             serde_json::to_string(&res).unwrap()
         }
         Err(e) => {
+            error!("error: {:?}", e);
             let res = BaseResponse {
                 response_code: 1,
                 response_msg: e.to_string(),
