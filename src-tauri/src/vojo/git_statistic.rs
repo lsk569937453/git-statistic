@@ -170,6 +170,42 @@ impl FileStatisticExtensionInfoItem {
         }
     }
 }
+
+#[derive(Serialize, Deserialize, Clone)]
+
+pub struct TagStatisticInfo {
+    pub tag_statistic_base_info: TagStatisticBaseInfo,
+    pub tag_statistic_main_info: TagStatisticMainInfo,
+}
+#[derive(Serialize, Deserialize, Clone)]
+
+pub struct TagStatisticBaseInfo {
+    pub total_tags: i32,
+    pub average_commit_per_tag: String,
+}
+#[derive(Serialize, Deserialize, Clone)]
+
+pub struct TagStatisticMainInfo {
+    pub list: Vec<TagStatisticMainInfoItem>,
+}
+#[derive(Serialize, Deserialize, Clone)]
+
+pub struct TagStatisticMainInfoItem {
+    pub tag_name: String,
+    pub date: String,
+    pub commit_count: i32,
+    pub authors: Vec<String>,
+}
+impl TagStatisticMainInfoItem {
+    pub fn new(tag_name: String, date: String, commit_count: i32, authors: Vec<String>) -> Self {
+        Self {
+            tag_name,
+            date,
+            commit_count,
+            authors,
+        }
+    }
+}
 #[derive(Serialize, Deserialize, Clone)]
 
 pub struct GitStatisticInfo {
@@ -177,6 +213,7 @@ pub struct GitStatisticInfo {
     pub commit_info: CommmitInfo,
     pub author_statistic_info: AuthorStatisticInfo,
     pub file_statistic_info: FileStatisticInfo,
+    pub tag_statistic_info: TagStatisticInfo,
 }
 impl GitStatisticInfo {
     pub fn new() -> Self {
@@ -220,6 +257,13 @@ impl GitStatisticInfo {
                     average_file_size: "".to_string(),
                 },
                 file_statistic_extension_info: FileStatisticExtensionInfo { list: Vec::new() },
+            },
+            tag_statistic_info: TagStatisticInfo {
+                tag_statistic_base_info: TagStatisticBaseInfo {
+                    total_tags: 0,
+                    average_commit_per_tag: "".to_string(),
+                },
+                tag_statistic_main_info: TagStatisticMainInfo { list: Vec::new() },
             },
         }
     }

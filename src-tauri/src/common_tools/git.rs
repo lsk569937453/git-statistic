@@ -87,7 +87,24 @@ pub fn get_files_info_with_error(
 
     Ok(hash_map)
 }
-fn get_files_count(repo: Repository) -> Result<i32, anyhow::Error> {
+pub fn get_tags_info_with_error(
+    state: State<SqlLiteState>,
+) -> Result<HashMap<String, String>, anyhow::Error> {
+    let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
+    let connection = &sql_lite.connection;
+    let mut statement = connection.prepare("SELECT quota_name,quota_value FROM git_tag_info")?;
+    let rows: Vec<_> = statement
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .collect();
+    let mut hash_map = HashMap::new();
+    for item in rows {
+        let (key, value) = item?;
+        hash_map.insert(key, value);
+    }
+
+    Ok(hash_map)
+}
+fn get_files_count(repo: &Repository) -> Result<i32, anyhow::Error> {
     let index = repo.index()?;
     let mut current_lines_count = 0;
     for _ in index.iter() {
@@ -127,7 +144,8 @@ fn init_statistic_info(connections: &Connection, repo: String) -> Result<(), any
     )?;
     save_commit_info(git_statis_info.clone(), connections)?;
     save_author_info(git_statis_info.clone(), connections)?;
-    save_files_info(git_statis_info, connections)?;
+    save_files_info(git_statis_info.clone(), connections)?;
+    save_tag_info(git_statis_info, connections)?;
 
     Ok(())
 }
@@ -294,12 +312,50 @@ fn save_files_info(
 
     Ok(())
 }
+fn save_tag_info(
+    git_statistic_info: GitStatisticInfo,
+    connections: &Connection,
+) -> Result<(), anyhow::Error> {
+    {
+        let git_statistic_info_cloned = git_statistic_info.clone();
+        let file_statistic_base_info = git_statistic_info_cloned
+            .tag_statistic_info
+            .tag_statistic_base_info;
+        let total_authors_statistic_info_list_value =
+            serde_json::to_string(&file_statistic_base_info)?;
+        connections.execute(
+            "insert into git_tag_info (quota_name,quota_value)
+    values (?1,?2)",
+            params![
+                "tag_statistic_base_info",
+                total_authors_statistic_info_list_value
+            ],
+        )?;
+    }
+    {
+        let git_statistic_info_cloned = git_statistic_info.clone();
+        let file_statistic_extension_info = git_statistic_info_cloned
+            .tag_statistic_info
+            .tag_statistic_main_info;
+        let total_authors_statistic_info_list_value =
+            serde_json::to_string(&file_statistic_extension_info)?;
+        connections.execute(
+            "insert into git_tag_info (quota_name,quota_value)
+    values (?1,?2)",
+            params![
+                "tag_statistic_ext_info",
+                total_authors_statistic_info_list_value
+            ],
+        )?;
+    }
+
+    Ok(())
+}
 fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Error> {
     let mut git_statistic_info = GitStatisticInfo::new();
-    let new_repo = Repository::open(repo_path.clone())?;
     let repo = Repository::open(repo_path.clone())?;
 
-    let total_files = get_files_count(new_repo)?;
+    let total_files = get_files_count(&repo)?;
     let mut revwalk = repo.revwalk()?;
     let revspec = repo.revparse_single("HEAD")?.id();
     revwalk.push(revspec)?;
@@ -331,9 +387,8 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
         let author_name = author.name().ok_or(anyhow!("can not find name"))?;
         authors.insert(author_name.to_string());
 
-        let repo2 = Repository::open(repo_path.clone())?;
         if total_commits == 0 {
-            total_lines_count = get_lines_count(commit.clone(), repo2)?.1;
+            total_lines_count = get_lines_count(commit.clone(), &repo)?.1;
         }
         total_commits += 1;
 
@@ -367,9 +422,9 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
 
     info!("first commit time is {}", first_commit_time);
 
-    let repo = Repository::open(repo_path.clone())?;
+    git_statistic_info.file_statistic_info = analyze_files(&repo)?;
+    git_statistic_info.tag_statistic_info = analyze_tag(&repo)?;
 
-    git_statistic_info.file_statistic_info = analyze_files(repo)?;
     let now = Utc::now();
     let age = now.signed_duration_since(first_commit_time);
 
@@ -395,7 +450,7 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
 
     Ok(git_statistic_info)
 }
-fn analyze_files(repo: Repository) -> Result<FileStatisticInfo, anyhow::Error> {
+fn analyze_files(repo: &Repository) -> Result<FileStatisticInfo, anyhow::Error> {
     let head_commit = repo.head()?.peel_to_commit()?;
     let tree = head_commit.tree()?;
 
@@ -406,7 +461,7 @@ fn analyze_files(repo: Repository) -> Result<FileStatisticInfo, anyhow::Error> {
     let mut file_statistic_ext_map = HashMap::new();
     tree.walk(TreeWalkMode::PreOrder, |_, entry| {
         if let Some(blob) = entry
-            .to_object(&repo)
+            .to_object(repo)
             .ok()
             .and_then(|o| o.as_blob().cloned())
         {
@@ -468,28 +523,86 @@ fn analyze_files(repo: Repository) -> Result<FileStatisticInfo, anyhow::Error> {
     };
     Ok(file_statisctic_info)
 }
-fn analyze_tag(repo: Repository) -> Result<(), anyhow::Error> {
-    // let iter = repo.tag_names(Some("*"))?.iter();
-    for name in repo.tag_names(Some("*"))?.iter() {
-        let obj = repo.revparse_single(name.ok_or(anyhow!(""))?)?;
+fn analyze_tag(repo: &Repository) -> Result<TagStatisticInfo, anyhow::Error> {
+    let refs = repo.references()?;
+    let mut map = HashMap::new();
+    let mut tag_refs: Vec<(Oid, String)> = vec![];
 
-        if let Some(tag) = obj.as_tag() {
-            // print_tag(tag, args);
-        } else if let Some(commit) = obj.as_commit() {
-            // print_commit(commit, name, args);
-        } else {
-            // print_name(name);
+    for r in refs {
+        let r = r?;
+        if let Some(name) = r.shorthand() {
+            if let Some(target) = r.target() {
+                // Filter tags
+                if r.is_tag() {
+                    tag_refs.push((target, name.to_string()));
+                }
+            }
         }
     }
-    Ok(())
+
+    // Process each tag
+    for (hash, tag) in tag_refs {
+        let commit = repo.find_commit(hash)?;
+        let commit_time = Utc
+            .timestamp_opt(commit.time().seconds(), 0)
+            .single()
+            .ok_or(anyhow!(""))?;
+        let converted: DateTime<Local> = DateTime::from(commit_time);
+        let year_and_month = converted.format("%Y-%m-%d").to_string();
+
+        map.insert(
+            tag.clone(),
+            TagStatisticMainInfoItem::new(tag.clone(), year_and_month, 0, vec![]),
+        );
+    }
+
+    let mut prev: Option<String> = None;
+    let mut total_commit = 0;
+    for (tag_name, tag_info) in map.iter_mut() {
+        let mut revwalk = repo.revwalk()?;
+        revwalk.push_ref(&format!("refs/tags/{}", tag_name))?;
+        if let Some(prev_tag) = &prev {
+            revwalk.hide_ref(&format!("refs/tags/{}", prev_tag))?;
+        }
+
+        for oid in revwalk {
+            let oid = oid?;
+            let commit = repo.find_commit(oid)?;
+            let author_name = commit.author().name().unwrap_or("Unknown").to_string();
+
+            tag_info.commit_count += 1;
+            tag_info.authors.push(author_name.clone());
+            total_commit += 1;
+        }
+
+        prev = Some(tag_name.to_string());
+    }
+    let total_tags = map.len() as i32;
+    let val = total_commit as f64 / total_tags as f64;
+    let average_commit_per_tag = format!("{:.2}", val);
+    let tag_statistic_base_info = TagStatisticBaseInfo {
+        total_tags,
+        average_commit_per_tag,
+    };
+    let tag_statistic_main_info_list = map
+        .values()
+        .cloned()
+        .collect::<Vec<TagStatisticMainInfoItem>>();
+    let tag_statustic_info = TagStatisticInfo {
+        tag_statistic_base_info,
+        tag_statistic_main_info: TagStatisticMainInfo {
+            list: tag_statistic_main_info_list,
+        },
+    };
+    Ok(tag_statustic_info)
 }
-fn get_lines_count(commit: Commit, repo: Repository) -> Result<(i32, i32), anyhow::Error> {
+fn get_lines_count(commit: Commit, repo: &Repository) -> Result<(i32, i32), anyhow::Error> {
     let tree = commit.tree()?;
     let (mut total_files, mut total_lines) = (0, 0);
 
     let _ = tree.walk(TreeWalkMode::PreOrder, |_, entry| {
         if entry.kind() == Some(git2::ObjectType::Blob) {
-            let obj = entry.to_object(&repo).unwrap();
+            let obj = entry.to_object(repo).unwrap();
             let blob = obj.as_blob().ok_or(anyhow!("erros ")).unwrap();
             let file_lines = blob.content().split(|&c| c == b'\n').count();
             total_lines += file_lines as i32;
