@@ -194,14 +194,14 @@ pub struct TagStatisticMainInfoItem {
     pub tag_name: String,
     pub date: String,
     pub commit_count: i32,
-    pub authors: HashMap<String, usize>,
+    pub authors: Vec<(String, usize)>,
 }
 impl TagStatisticMainInfoItem {
     pub fn new(
         tag_name: String,
         date: String,
         commit_count: i32,
-        authors: HashMap<String, usize>,
+        authors: Vec<(String, usize)>,
     ) -> Self {
         Self {
             tag_name,

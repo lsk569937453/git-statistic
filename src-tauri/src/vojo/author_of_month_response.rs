@@ -33,8 +33,14 @@ impl AuthorOfMonthResponse {
                 ("".to_string(), 0)
             };
             let mut next_top_five = vec![];
+            let mut count = 0;
+
             while let Some(task) = heap.pop() {
                 next_top_five.push(task.author.clone());
+                count += 1;
+                if count >= 5 {
+                    break;
+                }
             }
             data.push(AuthorOfMonthResponseItem::new(
                 date,

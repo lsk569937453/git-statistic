@@ -51,15 +51,14 @@ export function TagInfoPage() {
             setTagBaseInfo(fileBaseInfo);
 
             let fileMainInfo = JSON.parse(tag_statistic_ext_info).list;
-            console.log(fileBaseInfo);
+            console.log(fileMainInfo);
             setTableData(fileMainInfo);
         }
     }
     const renderTable = () => {
         return tableData.map((item: any, index: any) => {
-            let authorsString = Object.entries(item.authors)
-                .map(([key, value]) => `${key}(${value})`)
-                .join(', ');
+
+            let authorsString = item.authors.map((itemx: any) => `${itemx[0]}(${itemx[1]})`).join(',');
             return <TableRow>
                 <TableCell className="text-center border border-black">{item.tag_name}</TableCell>
                 <TableCell className="text-center border border-black">{item.date} </TableCell>

@@ -223,6 +223,11 @@ fn save_author_info(
             .clone()
             .collect();
         total_authors_statistic_info_list.sort_by(|a, b| b.total_commit.cmp(&a.total_commit));
+        let len = total_authors_statistic_info_list.len().min(20);
+        total_authors_statistic_info_list = total_authors_statistic_info_list
+            .into_iter()
+            .take(len)
+            .collect();
         let total_authors_statistic_info_list_value =
             serde_json::to_string(&total_authors_statistic_info_list)?;
         connections.execute(
@@ -414,7 +419,6 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
             .ok_or(anyhow!(""))?;
         let converted: DateTime<Local> = DateTime::from(commit_time);
         git_statistic_info.calc_commit(converted, author_name.to_string(), added, deleted);
-        info!("commit {} is {}", index, commit.id());
     }
 
     let last_commit = repo.find_commit(last_commit_oid)?;
@@ -426,10 +430,8 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
     info!("first commit time is {}", first_commit_time);
 
     git_statistic_info.file_statistic_info = analyze_files(&repo)?;
-    info!("t13sd");
 
     git_statistic_info.tag_statistic_info = analyze_tag(&repo)?;
-    info!("t13");
     let now = Utc::now();
     let age = now.signed_duration_since(first_commit_time);
 
@@ -518,10 +520,11 @@ fn analyze_files(repo: &Repository) -> Result<FileStatisticInfo, anyhow::Error> 
         total_lines_count: total_lines,
         average_file_size: rounded,
     };
-    let file_statisct_ext = file_statistic_ext_map
+    let mut file_statisct_ext = file_statistic_ext_map
         .values()
         .cloned()
         .collect::<Vec<FileStatisticExtensionInfoItem>>();
+    file_statisct_ext.sort_by(|a, b| b.files_count.cmp(&a.files_count));
     let file_statisctic_info = FileStatisticInfo {
         file_statistic_base_info,
         file_statistic_extension_info: FileStatisticExtensionInfo {
@@ -534,7 +537,6 @@ fn analyze_tag(repo: &Repository) -> Result<TagStatisticInfo, anyhow::Error> {
     let refs = repo.references()?;
     let mut map = HashMap::new();
     let mut tag_refs: Vec<(Oid, String)> = vec![];
-    info!("dsa");
     for r in refs {
         let r = r?;
         if let Some(name) = r.shorthand() {
@@ -546,7 +548,6 @@ fn analyze_tag(repo: &Repository) -> Result<TagStatisticInfo, anyhow::Error> {
             }
         }
     }
-    info!("dsa2");
 
     // Process each tag
     for (hash, tag) in tag_refs {
@@ -580,10 +581,9 @@ fn analyze_tag(repo: &Repository) -> Result<TagStatisticInfo, anyhow::Error> {
 
         map.insert(
             hash,
-            TagStatisticMainInfoItem::new(tag.clone(), year_and_month, 0, HashMap::new()),
+            TagStatisticMainInfoItem::new(tag.clone(), year_and_month, 0, vec![]),
         );
     }
-    info!("dsa3,tag count is {}", map.len());
     let mut prev: Option<Oid> = None;
     let total_commit = 0;
     for (tag_oid, tag_info) in map.iter_mut() {
@@ -611,12 +611,11 @@ fn analyze_tag(repo: &Repository) -> Result<TagStatisticInfo, anyhow::Error> {
             }
             info!("tag:{},map:{:?}", tag_oid, author_count);
             tag_info.commit_count = commit_count;
-            tag_info.authors = author_count;
+            tag_info.authors = author_count.into_iter().collect();
 
             prev = Some(*tag_oid);
         }
     }
-    info!("dsa4");
 
     let total_tags = map.len() as i32;
     let val = total_commit as f64 / total_tags as f64;
@@ -630,6 +629,14 @@ fn analyze_tag(repo: &Repository) -> Result<TagStatisticInfo, anyhow::Error> {
         .cloned()
         .collect::<Vec<TagStatisticMainInfoItem>>();
     tag_statistic_main_info_list.sort_by(|a, b| b.date.cmp(&a.date));
+    for item in tag_statistic_main_info_list.iter_mut() {
+        // Convert HashMap to a Vec of tuples, then sort by the value (usize)
+        let mut sorted_authors: Vec<(String, usize)> = item.authors.clone().into_iter().collect();
+        sorted_authors.sort_by(|a, b| b.1.cmp(&a.1)); // Sort in descending order
+
+        // Replace the original authors map with the sorted vector converted back into a HashMap
+        item.authors = sorted_authors;
+    }
     let tag_statustic_info = TagStatisticInfo {
         tag_statistic_base_info,
         tag_statistic_main_info: TagStatisticMainInfo {
