@@ -1,4 +1,4 @@
-use crate::sql_lite::connection::SqlLiteState;
+use crate::sql_lite::connection::AppState;
 use crate::vojo::author_of_month_response::AuthorOfMonthResponse;
 use crate::vojo::git_statistic::*;
 use chrono::DateTime;
@@ -12,9 +12,9 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::Path;
 use tauri::State;
-pub fn get_base_info_with_error(state: State<SqlLiteState>) -> Result<GitBaseInfo, anyhow::Error> {
-    let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
-    let connection = &sql_lite.connection;
+pub fn get_base_info_with_error(state: State<AppState>) -> Result<GitBaseInfo, anyhow::Error> {
+    let sql_lite = state.pool.get()?;
+    let connection = &sql_lite;
     let mut statement = connection.prepare("SELECT age,project_name,generate_time,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count FROM git_base_info")?;
     let rows: Vec<_> = statement
         .query_map([], |row| {
@@ -37,10 +37,10 @@ pub fn get_base_info_with_error(state: State<SqlLiteState>) -> Result<GitBaseInf
     Ok(git_base_info)
 }
 pub fn get_commit_info_with_error(
-    state: State<SqlLiteState>,
+    state: State<AppState>,
 ) -> Result<HashMap<String, String>, anyhow::Error> {
-    let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
-    let connection = &sql_lite.connection;
+    let sql_lite = state.pool.get()?;
+    let connection = &sql_lite;
     let mut statement = connection.prepare("SELECT quota_name,quota_value FROM git_commit_info")?;
     let rows: Vec<_> = statement
         .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
@@ -54,10 +54,10 @@ pub fn get_commit_info_with_error(
     Ok(hash_map)
 }
 pub fn get_authors_info_with_error(
-    state: State<SqlLiteState>,
+    state: State<AppState>,
 ) -> Result<HashMap<String, String>, anyhow::Error> {
-    let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
-    let connection = &sql_lite.connection;
+    let sql_lite = state.pool.get()?;
+    let connection = &sql_lite;
     let mut statement = connection.prepare("SELECT quota_name,quota_value FROM git_author_info")?;
     let rows: Vec<_> = statement
         .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
@@ -71,10 +71,10 @@ pub fn get_authors_info_with_error(
     Ok(hash_map)
 }
 pub fn get_files_info_with_error(
-    state: State<SqlLiteState>,
+    state: State<AppState>,
 ) -> Result<HashMap<String, String>, anyhow::Error> {
-    let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
-    let connection = &sql_lite.connection;
+    let sql_lite = state.pool.get()?;
+    let connection = &sql_lite;
     let mut statement = connection.prepare("SELECT quota_name,quota_value FROM git_file_info")?;
     let rows: Vec<_> = statement
         .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
@@ -88,10 +88,10 @@ pub fn get_files_info_with_error(
     Ok(hash_map)
 }
 pub fn get_tags_info_with_error(
-    state: State<SqlLiteState>,
+    state: State<AppState>,
 ) -> Result<HashMap<String, String>, anyhow::Error> {
-    let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
-    let connection = &sql_lite.connection;
+    let sql_lite = state.pool.get()?;
+    let connection = &sql_lite;
     let mut statement = connection.prepare("SELECT quota_name,quota_value FROM git_tag_info")?;
     let rows: Vec<_> = statement
         .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
@@ -104,6 +104,21 @@ pub fn get_tags_info_with_error(
 
     Ok(hash_map)
 }
+pub fn get_init_status_with_error(state: State<AppState>) -> Result<(i32, i32), anyhow::Error> {
+    let sql_lite = state.pool.get()?;
+    let connection = &sql_lite;
+    let mut statement =
+        connection.prepare("SELECT current_tasks,total_tasks FROM git_init_status")?;
+    let rows: Vec<_> = statement
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .collect();
+    let mut data = (0, 0);
+    for item in rows {
+        data = item?;
+    }
+
+    Ok(data)
+}
 fn get_files_count(repo: &Repository) -> Result<i32, anyhow::Error> {
     let index = repo.index()?;
     let mut current_lines_count = 0;
@@ -113,19 +128,108 @@ fn get_files_count(repo: &Repository) -> Result<i32, anyhow::Error> {
     Ok(current_lines_count)
 }
 
-pub fn init_git_with_error(
-    state: State<SqlLiteState>,
-    repo_path: String,
-) -> Result<(), anyhow::Error> {
+pub fn init_git_with_error(state: AppState, repo_path: String) -> Result<(), anyhow::Error> {
     info!("repo path is {}", repo_path);
-    let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
-
-    let connection = &sql_lite.connection;
+    let sql_lite = state.pool.get()?;
+    let connection = &sql_lite;
+    clear_data(connection)?;
+    init_git_tasks(connection, repo_path.clone())?;
     init_statistic_info(connection, repo_path.clone())?;
     Ok(())
 }
+fn init_git_tasks(connection: &Connection, repo_path: String) -> Result<(), anyhow::Error> {
+    let repo = Repository::open(repo_path.clone())?;
+    let mut revwalk = repo.revwalk()?;
+    let revspec = repo.revparse_single("HEAD")?.id();
+    revwalk.push(revspec)?;
+    let commit_task_count = revwalk.collect::<Result<Vec<_>, _>>()?.len();
+    let mut tag_task_count = 0;
+    let refs = repo.references()?;
+    for r in refs {
+        let r = r?;
+        if r.shorthand().is_some() && r.target().is_some() && r.is_tag() {
+            tag_task_count += 1;
+        }
+    }
+    connection.execute(
+        "insert into git_init_status (current_tasks,total_tasks)
+    values (?1,?2)",
+        params![0, commit_task_count + tag_task_count],
+    )?;
+    Ok(())
+}
+fn clear_data(connection: &Connection) -> Result<(), anyhow::Error> {
+    connection.execute_batch(
+        "DROP TABLE IF EXISTS git_base_info;
+            DROP TABLE IF EXISTS git_commit_info;
+            DROP TABLE IF EXISTS git_author_info;
+            DROP TABLE IF EXISTS git_file_info;
+            DROP TABLE IF EXISTS git_tag_info;
+            DROP TABLE IF EXISTS git_init_status;
+
+        ",
+    )?;
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS git_init_status (
+            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
+            current_tasks INTEGER NOT NULL, 
+            total_tasks INTEGER NOT NULL
+            )",
+        params![],
+    )?;
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS git_base_info (
+            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
+            project_name TEXT NOT NULL, 
+            generate_time TEXT NOT NULL,
+            age    INTEGER NOT NULL, 
+            active_days  INTEGER NOT NULL,
+            total_files_count INTEGER NOT NULL,
+            total_lines_count INTEGER NOT NULL,
+            total_added_count INTEGER NOT NULL,
+            total_deleted_count INTEGER NOT NULL,
+            total_commits_count INTEGER NOT NULL,
+            authors_count INTEGER NOT NULL
+            )",
+        params![],
+    )?;
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS git_commit_info (
+            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
+            quota_name TEXT NOT NULL, 
+            quota_value TEXT NOT NULL
+            )",
+        params![],
+    )?;
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS git_author_info (
+            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
+            quota_name TEXT NOT NULL, 
+            quota_value TEXT NOT NULL
+            )",
+        params![],
+    )?;
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS git_file_info (
+            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
+            quota_name TEXT NOT NULL, 
+            quota_value TEXT NOT NULL
+            )",
+        params![],
+    )?;
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS git_tag_info (
+            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
+            quota_name TEXT NOT NULL, 
+            quota_value TEXT NOT NULL
+            )",
+        params![],
+    )?;
+
+    Ok(())
+}
 fn init_statistic_info(connections: &Connection, repo: String) -> Result<(), anyhow::Error> {
-    let git_statis_info = analyze_base_info(repo)?;
+    let git_statis_info = analyze_base_info(connections, repo)?;
     info!("base info is {}", git_statis_info);
     let base_info = git_statis_info.clone().git_base_info;
     connections.execute(
@@ -357,7 +461,10 @@ fn save_tag_info(
 
     Ok(())
 }
-fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Error> {
+fn analyze_base_info(
+    connections: &Connection,
+    repo_path: String,
+) -> Result<GitStatisticInfo, anyhow::Error> {
     let mut git_statistic_info = GitStatisticInfo::new();
     let repo = Repository::open(repo_path.clone())?;
 
@@ -370,12 +477,16 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
     let mut total_commits = 0;
     let (mut added_total, mut deleted_total) = (0, 0);
 
-    let (diffopts, mut diffopts2) = (DiffOptions::new(), DiffOptions::new());
+    let (_, mut diffopts2) = (DiffOptions::new(), DiffOptions::new());
 
     let mut total_lines_count = 0;
     let mut authors = HashSet::new();
     let mut last_commit_oid = Oid::zero();
     for (index, commit) in revwalks.iter().enumerate() {
+        connections.execute(
+            "UPDATE git_init_status SET current_tasks = current_tasks + 1",
+            params![],
+        )?;
         let (mut added, mut deleted) = (0, 0);
         let commitx = *commit;
         last_commit_oid = commitx;
@@ -431,7 +542,7 @@ fn analyze_base_info(repo_path: String) -> Result<GitStatisticInfo, anyhow::Erro
 
     git_statistic_info.file_statistic_info = analyze_files(&repo)?;
 
-    git_statistic_info.tag_statistic_info = analyze_tag(&repo)?;
+    git_statistic_info.tag_statistic_info = analyze_tag(connections, &repo)?;
     let now = Utc::now();
     let age = now.signed_duration_since(first_commit_time);
 
@@ -533,7 +644,10 @@ fn analyze_files(repo: &Repository) -> Result<FileStatisticInfo, anyhow::Error> 
     };
     Ok(file_statisctic_info)
 }
-fn analyze_tag(repo: &Repository) -> Result<TagStatisticInfo, anyhow::Error> {
+fn analyze_tag(
+    connections: &Connection,
+    repo: &Repository,
+) -> Result<TagStatisticInfo, anyhow::Error> {
     let refs = repo.references()?;
     let mut map = HashMap::new();
     let mut tag_refs: Vec<(Oid, String)> = vec![];
@@ -585,8 +699,12 @@ fn analyze_tag(repo: &Repository) -> Result<TagStatisticInfo, anyhow::Error> {
         );
     }
     let mut prev: Option<Oid> = None;
-    let total_commit = 0;
+    let mut total_commit = 0;
     for (tag_oid, tag_info) in map.iter_mut() {
+        connections.execute(
+            "UPDATE git_init_status SET current_tasks = current_tasks + 1",
+            params![],
+        )?;
         if let Ok(r) = repo.find_commit(*tag_oid) {
             // Create a hashmap to count commits by author for this tag
             let mut author_count: HashMap<String, usize> = HashMap::new();
@@ -607,6 +725,7 @@ fn analyze_tag(repo: &Repository) -> Result<TagStatisticInfo, anyhow::Error> {
                 let author_name = commit.author().name().unwrap_or("Unknown").to_string();
                 // Increment commit count and add to author count
                 commit_count += 1;
+                total_commit += 1;
                 *author_count.entry(author_name).or_insert(0) += 1;
             }
             info!("tag:{},map:{:?}", tag_oid, author_count);

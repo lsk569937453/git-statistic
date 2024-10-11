@@ -30,7 +30,8 @@ import { LanguageMenu } from "./languageMenu"
 import { Dialog, DialogTrigger } from "../../components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { useTranslation, Trans } from "react-i18next";
-import { CreateLinkDialog } from "./createLinkDialog";
+import { CreateLinkDialog } from "./createLinkDialog"; import * as Progress from "@radix-ui/react-progress";
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -46,6 +47,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { LoadingSpinner } from "../components/spinner";
 import { useToast } from "@/components/ui/use-toast"
+import { set } from "date-fns"
 
 export function Menu() {
 
@@ -53,6 +55,10 @@ export function Menu() {
     const [showPreferenceDialog, setShowPreferenceDialog] = useState(false);
     const [showCreateLinkDialog, setShowCreateLinkDialog] = useState(false);
     const [showLoading, setShowLoading] = useState(false);
+    const [responseCode, setResponseCode] = useState(-1);
+    const [progressValue, setProgressValue] = useState(0);
+    const [currentGitProcess, setCurrentGitProcess] = useState(0);
+    const [totalGitProcess, setTotalGitProcess] = useState(0);
     const { t, i18n } = useTranslation();
     const { toast } = useToast()
 
@@ -70,23 +76,64 @@ export function Menu() {
         } else {
         };
         setShowLoading(true);
-        const { response_code, response_msg } = JSON.parse(await invoke("init_git", { repoPath: selected }));
+        const { response_code, response_msg } = JSON.parse(await invoke("init_git_async", { repoPath: selected }));
         console.log(response_code);
         console.log(response_msg);
         if (response_code == 0) {
-            window.location.reload();// 强制页面刷新
-
-        } else {
+            // window.location.reload();// 强制页面刷新
+            setResponseCode(0);
+        }
+        else {
             toast({
                 variant: "destructive",
                 title: t('toastMessage.errorMessageTile'),
                 description: t('base64ImagePage.base64ShouldNotEmptyMessageBody'),
             })
         }
-        console.log(selected);
-        setShowLoading(false);
+        // console.log(selected);
+        // setShowLoading(false);
 
     };
+    useEffect(() => {
+        let interval: any;
+        console.log(responseCode);
+        if (responseCode === 0) {
+            interval = setInterval(async () => {
+                try {
+                    const { response_code, response_msg } = JSON.parse(await invoke("get_init_status"));
+                    console.log(response_code);
+                    console.log(response_msg);
+
+                    if (response_code === 0) {
+                        setCurrentGitProcess(response_msg[0]);
+                        setTotalGitProcess(response_msg[1]);
+                        setProgressValue(Math.floor((response_msg[0] / response_msg[1]) * 100));
+                        if (response_msg[0] === response_msg[1]) {
+                            clearInterval(interval);
+                            setShowLoading(false);
+
+                        }
+                    }
+                    // if (taskStatus === 'completed') {
+                    //     clearInterval(interval); // Stop polling when task is complete
+                    // } else if (taskStatus === 'failed') {
+                    //     clearInterval(interval); // Stop polling if task failed
+                    // }
+                } catch (error) {
+                    console.error('Error fetching task status:', error);
+                    clearInterval(interval); // Stop polling if there's an error
+                    setShowLoading(false);
+
+                }
+            }, 1000); // Poll every 5 seconds
+        }
+
+        return () => {
+            if (interval) clearInterval(interval); // Cleanup on component unmount or task completion
+        };
+    }, [responseCode]);
+
+
     const saveHtml = () => {
         var pageHTML = document.documentElement.outerHTML;
 
@@ -101,7 +148,22 @@ export function Menu() {
         <div>
             <AlertDialog open={showLoading} onOpenChange={setShowLoading}>
                 <AlertDialogContent className="w-30 ">
-                    <LoadingSpinner size={48} color="indigo" />
+                    <div className="flex flex-row gap-x-4">
+                        <Progress.Root
+                            className="relative h-[25px] w-[300px] overflow-hidden rounded-full bg-slate-300	"
+                            style={{
+
+                                transform: "translateZ(0)",
+                            }}
+                            value={progressValue}
+                        >
+                            <Progress.Indicator
+                                className="ease-[cubic-bezier(0.65, 0, 0.35, 1)] size-full bg-lime-500 transition-transform duration-[660ms]"
+                                style={{ transform: `translateX(-${100 - progressValue}%)` }}
+                            />
+                        </Progress.Root>
+                        <p>%{progressValue}</p><p className="font-bold">[{currentGitProcess}/{totalGitProcess}]</p>
+                    </div>
                 </AlertDialogContent>
             </AlertDialog>
             <Menubar className="rounded-none border-b border-none pl-2 lg:pl-3">

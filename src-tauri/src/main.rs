@@ -1,6 +1,5 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-use std::sync::Mutex;
 mod common_tools;
 mod sql_lite;
 use log::LevelFilter;
@@ -11,7 +10,7 @@ extern crate anyhow;
 #[macro_use]
 extern crate log;
 
-use crate::sql_lite::connection::{SqlLite, SqlLiteState};
+use crate::sql_lite::connection::AppState;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::MouseButton;
 use tauri::tray::MouseButtonState;
@@ -19,15 +18,14 @@ use tauri::tray::TrayIconBuilder;
 use tauri::tray::TrayIconEvent;
 
 use tauri::Manager;
-
+mod service;
 fn main() -> Result<(), anyhow::Error> {
-    let sql_lite = SqlLite::new()?;
-    let sql_lite_state = SqlLiteState(Mutex::new(sql_lite));
+    let sql_lite = AppState::new()?;
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .manage(sql_lite_state)
+        .manage(sql_lite)
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event.clone() {
                 window.hide().unwrap();
@@ -91,9 +89,9 @@ fn main() -> Result<(), anyhow::Error> {
             get_menu_config,
             set_menu_index,
             reset_menu_index,
-            test_url,
             get_base_info,
-            init_git,
+            init_git_async,
+            get_init_status,
             get_commit_info,
             get_authors_info,
             get_files_info,

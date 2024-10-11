@@ -1,4 +1,4 @@
-use crate::sql_lite::connection::SqlLiteState;
+use crate::sql_lite::connection::AppState;
 use crate::vojo::menu_config::MenuConfig;
 use rusqlite::{params, Result};
 use serde::Deserialize;
@@ -11,12 +11,12 @@ pub struct GetMenuConfigReq {
     pub source_index: i32,
 }
 pub fn get_menu_config_with_error(
-    state: State<SqlLiteState>,
+    state: State<AppState>,
     get_menu_config_reqs: Vec<GetMenuConfigReq>,
 ) -> Result<Vec<MenuConfig>, anyhow::Error> {
-    let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
+    let sql_lite = state.pool.get()?;
 
-    let connection = &sql_lite.connection;
+    let connection = &sql_lite;
     let mut statement = connection.prepare("SELECT id,menu_index,source_index FROM menu_config")?;
     let rows: Vec<_> = statement
         .query_map([], |row| {
@@ -65,7 +65,7 @@ pub fn get_menu_config_with_error(
     }
 }
 pub fn set_menu_index_with_error(
-    state: State<SqlLiteState>,
+    state: State<AppState>,
     source_index: i32,
     dst_menu_index: i32,
 ) -> Result<(), anyhow::Error> {
@@ -73,9 +73,9 @@ pub fn set_menu_index_with_error(
         "souce_index:{},dst_menu_index:{}",
         source_index, dst_menu_index
     );
-    let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
+    let sql_lite = state.pool.get()?;
 
-    let connection = &sql_lite.connection;
+    let connection = &sql_lite;
     let mut statement = connection.prepare("SELECT id,menu_index,source_index FROM menu_config")?;
     let rows: Vec<_> = statement
         .query_map([], |row| {
@@ -139,10 +139,10 @@ pub fn set_menu_index_with_error(
 
     Ok(())
 }
-pub fn reset_menu_index_with_error(state: State<SqlLiteState>) -> Result<(), anyhow::Error> {
-    let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
+pub fn reset_menu_index_with_error(state: State<AppState>) -> Result<(), anyhow::Error> {
+    let sql_lite = state.pool.get()?;
 
-    let connection = &sql_lite.connection;
+    let connection = &sql_lite;
     let statement =
         connection.execute("update menu_config set menu_index=source_index", params![])?;
     Ok(())
