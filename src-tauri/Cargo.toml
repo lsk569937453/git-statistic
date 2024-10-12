@@ -36,6 +36,7 @@ r2d2_sqlite = "0.25.0"
 r2d2 = "0.8.10"
 
 serde_repr = "0.1.17"
+openssl-sys = { version = "0.9", features = ["vendored"] }
 
 git2 = { version = "0.18.1", features = ["vendored-libgit2"] }
 tauri-plugin-fs = "2"
