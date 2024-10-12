@@ -108,8 +108,10 @@ export function Menu() {
                     if (response_code === 0) {
                         setCurrentGitProcess(response_msg[0]);
                         setTotalGitProcess(response_msg[1]);
-                        setProgressValue(Math.floor((response_msg[0] / response_msg[1]) * 100));
-                        if (response_msg[0] === response_msg[1]) {
+                        if (response_msg[1] != 0) {
+                            setProgressValue(Math.floor((response_msg[0] / response_msg[1]) * 100));
+                        }
+                        if (response_msg[0] === response_msg[1] && response_msg[1] !== 0) {
                             clearInterval(interval);
                             setShowLoading(false);
                             window.location.reload();// 强制页面刷新

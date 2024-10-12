@@ -7,6 +7,8 @@ use chrono::TimeZone;
 use chrono::Utc;
 use git2::Oid;
 use git2::{Commit, DiffFormat, DiffOptions, Repository, TreeWalkMode, TreeWalkResult};
+use r2d2::Pool;
+use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::{params, Connection};
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -130,11 +132,12 @@ fn get_files_count(repo: &Repository) -> Result<i32, anyhow::Error> {
 
 pub fn init_git_with_error(state: AppState, repo_path: String) -> Result<(), anyhow::Error> {
     info!("repo path is {}", repo_path);
+    let cloned_pool = state.pool.clone();
     let sql_lite = state.pool.get()?;
     let connection = &sql_lite;
     clear_data(connection)?;
     init_git_tasks(connection, repo_path.clone())?;
-    init_statistic_info(connection, repo_path.clone())?;
+    init_statistic_info(cloned_pool, repo_path.clone())?;
     Ok(())
 }
 fn init_git_tasks(connection: &Connection, repo_path: String) -> Result<(), anyhow::Error> {
@@ -238,8 +241,12 @@ fn clear_data(connection: &Connection) -> Result<(), anyhow::Error> {
 
     Ok(())
 }
-fn init_statistic_info(connections: &Connection, repo: String) -> Result<(), anyhow::Error> {
-    let git_statis_info = analyze_base_info(connections, repo)?;
+fn init_statistic_info(
+    pool: Pool<SqliteConnectionManager>,
+    repo: String,
+) -> Result<(), anyhow::Error> {
+    let git_statis_info = analyze_base_info(pool.clone(), repo)?;
+    let connections = pool.get()?;
     info!("base info is {}", git_statis_info);
     let base_info = git_statis_info.clone().git_base_info;
     connections.execute(
@@ -256,10 +263,10 @@ fn init_statistic_info(connections: &Connection, repo: String) -> Result<(), any
             base_info.total_commits,
             base_info.authors],
     )?;
-    save_commit_info(git_statis_info.clone(), connections)?;
-    save_author_info(git_statis_info.clone(), connections)?;
-    save_files_info(git_statis_info.clone(), connections)?;
-    save_tag_info(git_statis_info, connections)?;
+    save_commit_info(git_statis_info.clone(), &connections)?;
+    save_author_info(git_statis_info.clone(), &connections)?;
+    save_files_info(git_statis_info.clone(), &connections)?;
+    save_tag_info(git_statis_info, &connections)?;
 
     Ok(())
 }
@@ -471,8 +478,9 @@ fn save_tag_info(
 
     Ok(())
 }
+use rayon::prelude::*;
 fn analyze_base_info(
-    connections: &Connection,
+    pool: Pool<SqliteConnectionManager>,
     repo_path: String,
 ) -> Result<GitStatisticInfo, anyhow::Error> {
     let mut git_statistic_info = GitStatisticInfo::new();
@@ -489,23 +497,23 @@ fn analyze_base_info(
 
     let (mut added_total, mut deleted_total) = (0, 0);
 
-    let (_, mut diffopts2) = (DiffOptions::new(), DiffOptions::new());
-
-    let mut authors = HashSet::new();
-    let mut last_commit_oid = Oid::zero();
+    let last_commit_oid = revwalks.last().ok_or(anyhow!(""))?;
     let commit_count = revwalks.len();
     info!("real commit count is {}", commit_count);
     let task_results = revwalks
-        .iter()
+        .par_iter()
         .map(
             |commit| -> Result<(DateTime<Local>, String, i32, i32), anyhow::Error> {
+                let repo = Repository::open(repo_path.clone())?;
+                let (_, mut diffopts2) = (DiffOptions::new(), DiffOptions::new());
+
+                let connections = pool.get()?;
                 connections.execute(
                     "UPDATE git_init_status SET current_tasks = current_tasks + 1",
                     params![],
                 )?;
                 let (mut added, mut deleted) = (0, 0);
                 let commitx = *commit;
-                last_commit_oid = commitx;
                 let commit = repo.find_commit(commitx)?;
 
                 let commit_cloned = commit.clone();
@@ -519,7 +527,7 @@ fn analyze_base_info(
 
                 let author = commit_cloned.author();
                 let author_name = author.name().ok_or(anyhow!("can not find name"))?;
-                authors.insert(author_name.to_string());
+                // authors.insert(author_name.to_string());
 
                 if a.is_some() {
                     let b = commit.tree()?;
@@ -533,8 +541,8 @@ fn analyze_base_info(
                         }
                         true
                     })?;
-                    added_total += added;
-                    deleted_total += deleted;
+                    // added_total += added;
+                    // deleted_total += deleted;
                 }
                 let commit_time = Utc
                     .timestamp_opt(commit.time().seconds(), 0)
@@ -547,11 +555,16 @@ fn analyze_base_info(
         )
         .collect::<Result<Vec<_>, _>>()?;
     let total_commits = task_results.len() as i32;
+    let mut authors = HashSet::new();
+
     for (converted, author_name, added, deleted) in task_results {
         git_statistic_info.calc_commit(converted, author_name.to_string(), added, deleted);
+        authors.insert(author_name);
+        added_total += added;
+        deleted_total += deleted;
     }
 
-    let last_commit = repo.find_commit(last_commit_oid)?;
+    let last_commit = repo.find_commit(*last_commit_oid)?;
     let first_commit_time = Utc
         .timestamp_opt(last_commit.time().seconds(), 0)
         .single()
@@ -561,7 +574,8 @@ fn analyze_base_info(
 
     git_statistic_info.file_statistic_info = analyze_files(&repo)?;
 
-    git_statistic_info.tag_statistic_info = analyze_tag(connections, &repo)?;
+    let connections = pool.get()?;
+    git_statistic_info.tag_statistic_info = analyze_tag(&connections, &repo)?;
     let now = Utc::now();
     let age = now.signed_duration_since(first_commit_time);
 

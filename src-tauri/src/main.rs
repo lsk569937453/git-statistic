@@ -73,7 +73,7 @@ fn main() -> Result<(), anyhow::Error> {
                         }
                     }
                     _ => {
-                        info!("unhandled event {event:?}");
+                        // info!("unhandled event {event:?}");
                     }
                 })
                 .build(app)?;

@@ -34,7 +34,7 @@ num = "0.4"
 rusqlite = { version = "0.32.1", features = ["bundled"] }
 r2d2_sqlite = "0.25.0"
 r2d2 = "0.8.10"
-
+rayon = "1.10.0"
 serde_repr = "0.1.17"
 openssl-sys = { version = "0.9", features = ["vendored"] }
 
