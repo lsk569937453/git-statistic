@@ -30,7 +30,8 @@ import { LanguageMenu } from "./languageMenu"
 import { Dialog, DialogTrigger } from "../../components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { useTranslation, Trans } from "react-i18next";
-import { CreateLinkDialog } from "./createLinkDialog"; import * as Progress from "@radix-ui/react-progress";
+import { CreateLinkDialog } from "./createLinkDialog";
+import * as Progress from "@radix-ui/react-progress";
 
 import {
     AlertDialog,
@@ -111,6 +112,8 @@ export function Menu() {
                         if (response_msg[0] === response_msg[1]) {
                             clearInterval(interval);
                             setShowLoading(false);
+                            window.location.reload();// 强制页面刷新
+
 
                         }
                     }
@@ -158,7 +161,7 @@ export function Menu() {
                             value={progressValue}
                         >
                             <Progress.Indicator
-                                className="ease-[cubic-bezier(0.65, 0, 0.35, 1)] size-full bg-lime-500 transition-transform duration-[660ms]"
+                                className="ease-[cubic-bezier(0.65, 0, 0.35, 1)] w-full h-full bg-green-500 transition-transform duration-\[660ms\]"
                                 style={{ transform: `translateX(-${100 - progressValue}%)` }}
                             />
                         </Progress.Root>

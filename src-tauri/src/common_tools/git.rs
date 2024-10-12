@@ -143,14 +143,24 @@ fn init_git_tasks(connection: &Connection, repo_path: String) -> Result<(), anyh
     let revspec = repo.revparse_single("HEAD")?.id();
     revwalk.push(revspec)?;
     let commit_task_count = revwalk.collect::<Result<Vec<_>, _>>()?.len();
-    let mut tag_task_count = 0;
+    let mut tag_set = HashSet::new();
     let refs = repo.references()?;
     for r in refs {
         let r = r?;
-        if r.shorthand().is_some() && r.target().is_some() && r.is_tag() {
-            tag_task_count += 1;
+        if r.shorthand().is_some() {
+            if let Some(target) = r.target() {
+                // Filter tags
+                if r.is_tag() {
+                    tag_set.insert(target);
+                }
+            }
         }
     }
+    let tag_task_count = tag_set.len();
+    info!(
+        "tag task count is {},commit task count is {}",
+        tag_task_count, commit_task_count
+    );
     connection.execute(
         "insert into git_init_status (current_tasks,total_tasks)
     values (?1,?2)",
@@ -482,6 +492,8 @@ fn analyze_base_info(
     let mut total_lines_count = 0;
     let mut authors = HashSet::new();
     let mut last_commit_oid = Oid::zero();
+    let commit_count = revwalks.len();
+    info!("real commit count is {}", commit_count);
     for (index, commit) in revwalks.iter().enumerate() {
         connections.execute(
             "UPDATE git_init_status SET current_tasks = current_tasks + 1",
@@ -622,7 +634,6 @@ fn analyze_files(repo: &Repository) -> Result<FileStatisticInfo, anyhow::Error> 
 
         TreeWalkResult::Ok
     })?;
-    info!("xxx");
     let val = total_size as f64 / total_files as f64;
     let rounded = format!("{:.2}", val);
 
@@ -700,6 +711,8 @@ fn analyze_tag(
     }
     let mut prev: Option<Oid> = None;
     let mut total_commit = 0;
+    let tag_count = map.len() as i32;
+    info!("real tag count is {}", tag_count);
     for (tag_oid, tag_info) in map.iter_mut() {
         connections.execute(
             "UPDATE git_init_status SET current_tasks = current_tasks + 1",
@@ -728,7 +741,6 @@ fn analyze_tag(
                 total_commit += 1;
                 *author_count.entry(author_name).or_insert(0) += 1;
             }
-            info!("tag:{},map:{:?}", tag_oid, author_count);
             tag_info.commit_count = commit_count;
             tag_info.authors = author_count.into_iter().collect();
 
@@ -779,7 +791,7 @@ fn get_lines_count(commit: Commit, repo: &Repository) -> Result<(i32, i32), anyh
         TreeWalkResult::Ok
     });
 
-    println!(
+    info!(
         "Total lines of code in commit: {},total files count:{}",
         total_lines, total_files
     );

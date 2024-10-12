@@ -103,11 +103,11 @@ export function ActivityPage() {
     const [currentInput, setCurrentInput] = useState();
     const { toast } = useToast()
     const [recentWeeksCommit, setRecentWeeksCommit] = useState();
-    const[hoursOfDayCommit,setHoursOfDayCommit]=useState();
-    const [dayOfWeekCommit,setDayOfWeekCommit]=useState();
-    const [monthOfYearCommit,setMonthOfYearCommit]=useState();
-    const [yearAndMonthCommit,setYearAndMonthCommit]=useState();
-    const [yearCommit,setYearCommit]=useState();
+    const [hoursOfDayCommit, setHoursOfDayCommit] = useState();
+    const [dayOfWeekCommit, setDayOfWeekCommit] = useState();
+    const [monthOfYearCommit, setMonthOfYearCommit] = useState();
+    const [yearAndMonthCommit, setYearAndMonthCommit] = useState();
+    const [yearCommit, setYearCommit] = useState();
     useEffect(() => {
         loadData();
     }, [])
@@ -121,21 +121,21 @@ export function ActivityPage() {
             const { recent_weeks_commit, hours_of_day_commit, day_of_week, month_of_year_commit, year_and_month_commit
                 , year_commit
             } = response_msg;
-            let recentWeeksCommit=JSON.parse(recent_weeks_commit).commits_map;
+            let recentWeeksCommit = JSON.parse(recent_weeks_commit).commits_map;
             setRecentWeeksCommit(recentWeeksCommit);
-            let hoursOfDayCommit=JSON.parse(hours_of_day_commit).commits_map;
+            let hoursOfDayCommit = JSON.parse(hours_of_day_commit).commits_map;
             setHoursOfDayCommit(hoursOfDayCommit);
 
-            let monthOfYearCommit=JSON.parse(month_of_year_commit).commits_map;
+            let monthOfYearCommit = JSON.parse(month_of_year_commit).commits_map;
             setMonthOfYearCommit(monthOfYearCommit);
 
-            let dayOfWeekCommit=JSON.parse(day_of_week).commits_map;
+            let dayOfWeekCommit = JSON.parse(day_of_week).commits_map;
             setDayOfWeekCommit(dayOfWeekCommit);
 
-            let yearAndMonthCommit=JSON.parse(year_and_month_commit).commits_map;
+            let yearAndMonthCommit = JSON.parse(year_and_month_commit).commits_map;
             setYearAndMonthCommit(yearAndMonthCommit);
 
-            let yearCommit=JSON.parse(year_commit).commits_map;
+            let yearCommit = JSON.parse(year_commit).commits_map;
             setYearCommit(yearCommit);
         }
     }
@@ -143,18 +143,18 @@ export function ActivityPage() {
         if (!yearCommit) {
             return {};
         }
-        const xdata=[];
-        const ydata=[];
+        const xdata = [];
+        const ydata = [];
 
         const ordered = Object.keys(yearCommit).sort().reduce(
-            (obj:any, key:any) => { 
-              obj[key] = yearCommit[key]; 
-              return obj;
-            }, 
+            (obj: any, key: any) => {
+                obj[key] = yearCommit[key];
+                return obj;
+            },
             {}
-          );
+        );
 
-        for(var i in ordered){
+        for (var i in ordered) {
             xdata.push(i);
             ydata.push(ordered[i]);
         }
@@ -177,7 +177,7 @@ export function ActivityPage() {
                     label: {
                         show: true,
                         position: 'top',
-                      }
+                    }
                 }
             ]
         };
@@ -186,18 +186,18 @@ export function ActivityPage() {
         if (!yearAndMonthCommit) {
             return {};
         }
-        const xdata=[];
-        const ydata=[];
+        const xdata = [];
+        const ydata = [];
 
         const ordered = Object.keys(yearAndMonthCommit).sort().reduce(
-            (obj:any, key:any) => { 
-              obj[key] = yearAndMonthCommit[key]; 
-              return obj;
-            }, 
+            (obj: any, key: any) => {
+                obj[key] = yearAndMonthCommit[key];
+                return obj;
+            },
             {}
-          );
+        );
 
-        for(var i in ordered){
+        for (var i in ordered) {
             xdata.push(i);
             ydata.push(ordered[i]);
         }
@@ -212,7 +212,7 @@ export function ActivityPage() {
                 axisLabel: {
                     interval: 0,
                     rotate: 60
-                  },
+                },
             },
             yAxis: {
                 type: 'value'
@@ -224,7 +224,7 @@ export function ActivityPage() {
                     label: {
                         show: true,
                         position: 'top',
-                      }
+                    }
                 }
             ]
         };
@@ -233,10 +233,10 @@ export function ActivityPage() {
         if (!monthOfYearCommit) {
             return {};
         }
-        const xdata=[];
-        const ydata:any=[];
+        const xdata = [];
+        const ydata: any = [];
 
-        for(var i = 1; i <=12; i++){
+        for (var i = 1; i <= 12; i++) {
             xdata.push(i);
 
             ydata.push(monthOfYearCommit?.[i]);
@@ -259,7 +259,7 @@ export function ActivityPage() {
                     label: {
                         show: true,
                         position: 'top',
-                      }
+                    }
                 }
             ]
         };
@@ -268,10 +268,10 @@ export function ActivityPage() {
         if (!dayOfWeekCommit) {
             return {};
         }
-        const xdata=["周一","周二","周三","周四","周五","周六","周日"];
-        const ydata:any=[];
+        const xdata = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+        const ydata: any = [];
 
-        for(var i = 1; i <=7; i++){
+        for (var i = 1; i <= 7; i++) {
             ydata.push(dayOfWeekCommit?.[i]);
         }
         return {
@@ -292,7 +292,7 @@ export function ActivityPage() {
                     label: {
                         show: true,
                         position: 'top',
-                      }
+                    }
                 }
             ]
         };
@@ -301,10 +301,10 @@ export function ActivityPage() {
         if (!hoursOfDayCommit) {
             return {};
         }
-        const xdata=[];
-        const ydata:any=[];
+        const xdata = [];
+        const ydata: any = [];
 
-        for(var i = 0; i <24; i++){
+        for (var i = 0; i < 24; i++) {
             xdata.push(i);
             ydata.push(hoursOfDayCommit?.[i]);
         }
@@ -326,20 +326,20 @@ export function ActivityPage() {
                     label: {
                         show: true,
                         position: 'top',
-                      }
+                    }
                 }
             ]
         };
     };
-   
+
     const recent32WeekOp = () => {
-        if(!recentWeeksCommit){
+        if (!recentWeeksCommit) {
             return {};
         }
-        const xdata=[];
-        const ydata:any=[];
+        const xdata = [];
+        const ydata: any = [];
 
-        for(var i = 32; i >0; i--){
+        for (var i = 32; i > 0; i--) {
             xdata.push(i);
             ydata.push(recentWeeksCommit?.[i]);
         }
@@ -361,7 +361,7 @@ export function ActivityPage() {
                     label: {
                         show: true,
                         position: 'top',
-                      }
+                    }
                 }
             ]
         };
@@ -395,14 +395,14 @@ export function ActivityPage() {
                         theme={"theme_name"}
                         option={dayOfWeekOp()}
                     />
-                     <ReactEChartsCore
+                    <ReactEChartsCore
                         echarts={echarts}
                         notMerge={true}
                         lazyUpdate={true}
                         theme={"theme_name"}
                         option={monthOfYearOp()}
                     />
-                     <ReactEChartsCore
+                    <ReactEChartsCore
                         echarts={echarts}
                         notMerge={true}
                         lazyUpdate={true}
@@ -426,23 +426,7 @@ export function ActivityPage() {
                                 option={dayOfWeekOp()}
                             />
                         </div>
-                        <Table className="2/12">
-                            <TableCaption>A list of your recent invoices.</TableCaption>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Invoice</TableHead>
-                                    <TableHead>Status</TableHead>
 
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                <TableRow>
-                                    <TableCell>INV001</TableCell>
-                                    <TableCell>Paid</TableCell>
-
-                                </TableRow>
-                            </TableBody>
-                        </Table>
                     </div>
 
                 </div>
