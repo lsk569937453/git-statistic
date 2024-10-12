@@ -165,7 +165,7 @@ export function Menu() {
                                 style={{ transform: `translateX(-${100 - progressValue}%)` }}
                             />
                         </Progress.Root>
-                        <p>%{progressValue}</p><p className="font-bold">[{currentGitProcess}/{totalGitProcess}]</p>
+                        <p>{progressValue}%</p><p className="font-bold">[{currentGitProcess}/{totalGitProcess}]</p>
                     </div>
                 </AlertDialogContent>
             </AlertDialog>
