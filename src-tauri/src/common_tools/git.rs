@@ -484,63 +484,70 @@ fn analyze_base_info(
     revwalk.push(revspec)?;
     let revwalks = revwalk.collect::<Result<Vec<_>, _>>()?;
 
-    let mut total_commits = 0;
+    let commit = repo.find_commit(*revwalks.first().ok_or(anyhow!(""))?)?;
+    let total_lines_count = get_lines_count(commit.clone(), &repo)?.1;
+
     let (mut added_total, mut deleted_total) = (0, 0);
 
     let (_, mut diffopts2) = (DiffOptions::new(), DiffOptions::new());
 
-    let mut total_lines_count = 0;
     let mut authors = HashSet::new();
     let mut last_commit_oid = Oid::zero();
     let commit_count = revwalks.len();
     info!("real commit count is {}", commit_count);
-    for (index, commit) in revwalks.iter().enumerate() {
-        connections.execute(
-            "UPDATE git_init_status SET current_tasks = current_tasks + 1",
-            params![],
-        )?;
-        let (mut added, mut deleted) = (0, 0);
-        let commitx = *commit;
-        last_commit_oid = commitx;
-        let commit = repo.find_commit(commitx)?;
+    let task_results = revwalks
+        .iter()
+        .map(
+            |commit| -> Result<(DateTime<Local>, String, i32, i32), anyhow::Error> {
+                connections.execute(
+                    "UPDATE git_init_status SET current_tasks = current_tasks + 1",
+                    params![],
+                )?;
+                let (mut added, mut deleted) = (0, 0);
+                let commitx = *commit;
+                last_commit_oid = commitx;
+                let commit = repo.find_commit(commitx)?;
 
-        let commit_cloned = commit.clone();
+                let commit_cloned = commit.clone();
 
-        let a = if commit.parents().len() == 1 {
-            let parent = commit.parent(0)?;
-            Some(parent.tree()?)
-        } else {
-            None
-        };
+                let a = if commit.parents().len() == 1 {
+                    let parent = commit.parent(0)?;
+                    Some(parent.tree()?)
+                } else {
+                    None
+                };
 
-        let author = commit_cloned.author();
-        let author_name = author.name().ok_or(anyhow!("can not find name"))?;
-        authors.insert(author_name.to_string());
+                let author = commit_cloned.author();
+                let author_name = author.name().ok_or(anyhow!("can not find name"))?;
+                authors.insert(author_name.to_string());
 
-        if total_commits == 0 {
-            total_lines_count = get_lines_count(commit.clone(), &repo)?.1;
-        }
-        total_commits += 1;
-
-        if a.is_some() {
-            let b = commit.tree()?;
-            let diff = repo.diff_tree_to_tree(a.as_ref(), Some(&b), Some(&mut diffopts2))?;
-            diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
-                if line.origin() == '+' {
-                    added += 1;
-                } else if line.origin() == '-' {
-                    deleted += 1;
+                if a.is_some() {
+                    let b = commit.tree()?;
+                    let diff =
+                        repo.diff_tree_to_tree(a.as_ref(), Some(&b), Some(&mut diffopts2))?;
+                    diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
+                        if line.origin() == '+' {
+                            added += 1;
+                        } else if line.origin() == '-' {
+                            deleted += 1;
+                        }
+                        true
+                    })?;
+                    added_total += added;
+                    deleted_total += deleted;
                 }
-                true
-            })?;
-            added_total += added;
-            deleted_total += deleted;
-        }
-        let commit_time = Utc
-            .timestamp_opt(commit.time().seconds(), 0)
-            .single()
-            .ok_or(anyhow!(""))?;
-        let converted: DateTime<Local> = DateTime::from(commit_time);
+                let commit_time = Utc
+                    .timestamp_opt(commit.time().seconds(), 0)
+                    .single()
+                    .ok_or(anyhow!(""))?;
+                let converted: DateTime<Local> = DateTime::from(commit_time);
+                // git_statistic_info.calc_commit(converted, author_name.to_string(), added, deleted);
+                Ok((converted, author_name.to_string(), added, deleted))
+            },
+        )
+        .collect::<Result<Vec<_>, _>>()?;
+    let total_commits = task_results.len() as i32;
+    for (converted, author_name, added, deleted) in task_results {
         git_statistic_info.calc_commit(converted, author_name.to_string(), added, deleted);
     }
 
