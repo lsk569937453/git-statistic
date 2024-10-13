@@ -1,7 +1,10 @@
+const flowbite = require("flowbite-react/tailwind");
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}", flowbite.content(),
+  ],
   theme: {
 
     container: {
@@ -87,5 +90,6 @@ module.exports = {
   plugins: [
     require("tailwindcss-animate"),
     require("tailwind-scrollbar")({ nocompatible: true }),
+    flowbite.plugin(),
   ],
 }

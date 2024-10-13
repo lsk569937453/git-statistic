@@ -53,6 +53,7 @@
     "date-fns": "^2.30.0",
     "echarts": "^5.4.3",
     "echarts-for-react": "^3.0.2",
+    "flowbite-react": "^0.10.2",
     "i18next": "^23.7.11",
     "lucide-react": "^0.263.1",
     "next-themes": "^0.2.1",

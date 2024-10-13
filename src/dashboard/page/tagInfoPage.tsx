@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { useTranslation, Trans } from "react-i18next";
+
 import {
     Card,
     CardContent,
@@ -59,53 +60,51 @@ export function TagInfoPage() {
         return tableData.map((item: any, index: any) => {
 
             let authorsString = item.authors.map((itemx: any) => `${itemx[0]}(${itemx[1]})`).join(',');
-            return <TableRow>
-                <TableCell className="text-center border border-black">{item.tag_name}</TableCell>
-                <TableCell className="text-center border border-black">{item.date} </TableCell>
-                <TableCell className="text-center border border-black">{item.commit_count} </TableCell>
-                <TableCell className="text-center border border-black">{authorsString} </TableCell>
-
-
+            return <TableRow key={index} className="w-full">
+                <TableCell className="text-center border border-black ">{item.tag_name}</TableCell>
+                <TableCell className="text-center border border-black ">{item.date} </TableCell>
+                <TableCell className="text-center border border-black ">{item.commit_count} </TableCell>
+                <TableCell className="text-center border border-black ">
+                    {authorsString}
+                </TableCell>
             </TableRow>
         });
     }
     return (
-        <ScrollArea className="h-full">
-            <div className="flex flex-col">
-                <Card className="pt-4">
-                    <CardContent className="flex flex-col gap-5 text-right">
-                        <div className="flex flex-row gap-10">
-                            <p className="basis-3/12 text-lg font-bold">Total tags:</p>
-                            <p className="text-lg">{tagBaseInfo?.total_tags}</p>
-                        </div>
-                        <div className="flex flex-row gap-10 text-right">
-                            <p className="basis-3/12 text-lg font-bold">Average commits per tag:</p>
-                            <p className="text-lg">{tagBaseInfo?.average_commit_per_tag}</p>
-                        </div>
+        <div className="flex flex-col  	overflow-y-auto h-full	overflow-x-hidden">
+            <Card className="pt-4 w-full">
+                <CardContent className="flex flex-col gap-5 text-right">
+                    <div className="flex flex-row gap-10">
+                        <p className="basis-3/12 text-lg font-bold">Total tags:</p>
+                        <p className="text-lg">{tagBaseInfo?.total_tags}</p>
+                    </div>
+                    <div className="flex flex-row gap-10 text-right">
+                        <p className="basis-3/12 text-lg font-bold">Average commits per tag:</p>
+                        <p className="text-lg">{tagBaseInfo?.average_commit_per_tag}</p>
+                    </div>
 
-                        <Separator />
-                        <Table >
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="text-center text-blue-500 font-bold border-y border-l border-black">Name</TableHead>
-                                    <TableHead className="text-center text-blue-500 font-bold border-y	border-black">Date</TableHead>
+                    <Separator />
+                    <Table className="w-full table-fixed overflow-x-hidden">
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="text-center text-blue-500 font-bold border-y border-l border-black w-1/12">Name</TableHead>
+                                <TableHead className="text-center text-blue-500 font-bold border-y	border-black w-1/12">Date</TableHead>
 
-                                    <TableHead className="text-center text-blue-500 font-black border-y border-black ">Commits</TableHead>
-                                    <TableHead className="text-center text-blue-500 font-black border-y border-r	border-black ">Authors</TableHead>
+                                <TableHead className="text-center text-blue-500 font-black border-y border-black w-1/12">Commits</TableHead>
+                                <TableHead className="text-center text-blue-500 font-black border-y border-r	border-black w-3/4">Authors</TableHead>
 
-                                </TableRow>
+                            </TableRow>
 
-                            </TableHeader>
-                            <TableBody className="">
+                        </TableHeader>
+                        <TableBody className="w-full">
 
-                                {renderTable()}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
+                            {renderTable()}
+                        </TableBody>
+                    </Table>
+                </CardContent>
 
-                </Card>
-            </div>
-        </ScrollArea>
+            </Card>
+        </div>
 
     );
 }
