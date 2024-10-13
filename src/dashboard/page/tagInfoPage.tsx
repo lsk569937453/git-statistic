@@ -75,11 +75,11 @@ export function TagInfoPage() {
             <Card className="pt-4 w-full">
                 <CardContent className="flex flex-col gap-5 text-right">
                     <div className="flex flex-row gap-10">
-                        <p className="basis-3/12 text-lg font-bold">Total tags:</p>
+                        <p className="basis-3/12 text-lg font-bold">{t("tagPage.totalTags")}:</p>
                         <p className="text-lg">{tagBaseInfo?.total_tags}</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
-                        <p className="basis-3/12 text-lg font-bold">Average commits per tag:</p>
+                        <p className="basis-3/12 text-lg font-bold">{t("tagPage.averageCommitPerTag")}:</p>
                         <p className="text-lg">{tagBaseInfo?.average_commit_per_tag}</p>
                     </div>
 
@@ -87,11 +87,11 @@ export function TagInfoPage() {
                     <Table className="w-full table-fixed overflow-x-hidden">
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="text-center text-blue-500 font-bold border-y border-l border-black w-1/12">Name</TableHead>
-                                <TableHead className="text-center text-blue-500 font-bold border-y	border-black w-1/12">Date</TableHead>
+                                <TableHead className="text-center text-blue-500 font-bold border-y border-l border-black w-1/12">{t("tagPage.tagName")}</TableHead>
+                                <TableHead className="text-center text-blue-500 font-bold border-y	border-black w-1/12">{t("tagPage.date")}</TableHead>
 
-                                <TableHead className="text-center text-blue-500 font-black border-y border-black w-1/12">Commits</TableHead>
-                                <TableHead className="text-center text-blue-500 font-black border-y border-r	border-black w-3/4">Authors</TableHead>
+                                <TableHead className="text-center text-blue-500 font-black border-y border-black w-1/12">{t("tagPage.commits")}</TableHead>
+                                <TableHead className="text-center text-blue-500 font-black border-y border-r	border-black w-3/4">{t("tagPage.authors")}</TableHead>
 
                             </TableRow>
 

@@ -42,29 +42,29 @@ export function BaseInfoPage() {
             <Card className="pt-4">
                 <CardContent className="flex flex-col gap-5 text-right">
                     <div className="flex flex-row gap-10">
-                        <p className="basis-2/12 text-lg font-bold">项目名称:</p>
+                        <p className="basis-3/12 text-lg font-bold">{t('generalPage.projectName')}</p>
                         <p className="text-lg">{baseInfo?.project_name}</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
-                        <p className="basis-2/12 text-lg font-bold">报告生成时间:</p>
+                        <p className="basis-3/12 text-lg font-bold">{t('generalPage.reportGeneratorTime')}:</p>
                         <p className="text-lg">{baseInfo?.generate_time}</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
-                        <p className="basis-2/12 text-lg font-bold">Git统计时间:</p>
+                        <p className="basis-3/12 text-lg font-bold">{t('generalPage.gitStatisticDateRange')}:</p>
                         <p className="text-lg"><span className="mr-2">{baseInfo?.first_commit_time}</span> 至
                             <span className="ml-2">{baseInfo?.last_commit_time}</span>
                         </p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
-                        <p className="basis-2/12 text-lg font-bold">项目周期:</p>
+                        <p className="basis-3/12 text-lg font-bold">{t('generalPage.projectRange')}:</p>
                         <p className="text-lg"><span className="mr-2"> {baseInfo?.age}</span>天</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
-                        <p className="basis-2/12 text-lg font-bold">项目文件数量:</p>
+                        <p className="basis-3/12 text-lg font-bold">{t('generalPage.fileCount')}:</p>
                         <p className="text-lg">{baseInfo?.total_files}</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
-                        <p className="basis-2/12 text-lg font-bold">总代码行数:</p>
+                        <p className="basis-3/12 text-lg font-bold">{t('generalPage.totalLines')}:</p>
                         <p>
                             <span className="text-lg mr-2">{baseInfo?.total_lines}</span>
                             (添加
@@ -74,11 +74,11 @@ export function BaseInfoPage() {
                         </p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
-                        <p className="basis-2/12 text-lg font-bold">总Commit数量:</p>
+                        <p className="basis-3/12 text-lg font-bold">{t('generalPage.totalCommits')}:</p>
                         <p className="text-lg">{baseInfo?.total_commits}</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
-                        <p className="basis-2/12 text-lg font-bold">项目参与人:</p>
+                        <p className="basis-3/12 text-lg font-bold">{t('generalPage.totalAuthors')}:</p>
                         <p className="text-lg">{baseInfo?.authors}</p>
                     </div>
                 </CardContent>

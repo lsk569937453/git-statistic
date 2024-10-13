@@ -16,7 +16,7 @@ export default function MainPage() {
                 <TabsTrigger value="activity">{t('mainPage.activityTabName')}</TabsTrigger>
                 <TabsTrigger value="authors">{t('mainPage.authorsTabName')}</TabsTrigger>
                 <TabsTrigger value="files">{t('mainPage.fileTabName')}</TabsTrigger>
-                <TabsTrigger value="tag">Tags</TabsTrigger>
+                <TabsTrigger value="tag">{t('mainPage.tagTabName')}</TabsTrigger>
 
             </TabsList>
             <TabsContent value="general" className="w-full h-full"><BaseInfoPage /></TabsContent>

@@ -141,30 +141,7 @@ export function AuthorPage() {
             // setYearCommit(yearCommit);
         }
     }
-    const handleValueChange = (e: any) => {
-        setCurrentInput(e.target.value);
-    }
-    const recent32WeekOp = () => {
 
-        return {
-            title: {
-                text: '最近32周活动',
-            },
-            xAxis: {
-                type: 'category',
-                data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-            },
-            yAxis: {
-                type: 'value'
-            },
-            series: [
-                {
-                    data: [120, 200, 150, 80, 70, 110, 130],
-                    type: 'bar'
-                }
-            ]
-        };
-    };
     const renderTable = () => {
         return totalAuthors.map((item: any, index) => {
             return <TableRow>
@@ -217,19 +194,19 @@ export function AuthorPage() {
 
                 <div className="p-4 flex flex-col gap-5 text-right ">
                     <div className="flex flex-col gap-y-4">
-                        <p className="text-2xl font-bold text-left">List Of Authors</p>
+                        <p className="text-2xl font-bold text-left">{t("authorsPage.authorList")}</p>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="text-center text-blue-500 font-bold border-y border-l border-black">Authors</TableHead>
-                                    <TableHead className="text-center text-blue-500 font-bold border-y	border-black">Total Commit</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-bold border-y border-l border-black">{t("authorsPage.author")}</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-bold border-y	border-black">{t("authorsPage.totalCommit")}</TableHead>
 
-                                    <TableHead className="text-center text-blue-500 font-black border-y	border-black ">Total Added</TableHead>
-                                    <TableHead className="text-center text-blue-500 font-bold border-y border-black">Total Deleted</TableHead>
-                                    <TableHead className="text-center text-blue-500 font-bold border-y border-black" >First Commit</TableHead>
-                                    <TableHead className="text-center text-blue-500 font-bold border-y border-black">Last Commit</TableHead>
-                                    <TableHead className="text-center text-black-500 font-bold border-y border-black">Age</TableHead>
-                                    <TableHead className="text-center text-blue-500 font-bold border-y  border-r border-black">Active Days</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-black border-y	border-black ">{t("authorsPage.totalAdded")}</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-bold border-y border-black">{t("authorsPage.totalDeleted")}</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-bold border-y border-black" >{t("authorsPage.firstCommit")}</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-bold border-y border-black">{t("authorsPage.lastCommit")}</TableHead>
+                                    <TableHead className="text-center text-black-500 font-bold border-y border-black">{t("authorsPage.age")}</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-bold border-y  border-r border-black">{t("authorsPage.activeDays")}</TableHead>
                                 </TableRow>
 
                             </TableHeader>
@@ -241,16 +218,16 @@ export function AuthorPage() {
                     </div>
                     <Separator />
                     <div className="flex flex-col gap-y-4">
-                        <p className="text-2xl font-bold text-left">Author Of Month</p>
+                        <p className="text-2xl font-bold text-left">{t("authorsPage.monthOfAuthors")}</p>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="text-center text-blue-500 font-bold border-y border-l border-black">Month</TableHead>
-                                    <TableHead className="text-center text-blue-500 font-bold border-y	border-black">Author</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-bold border-y border-l border-black">{t("authorsPage.month")}</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-bold border-y	border-black">{t("authorsPage.author")}</TableHead>
 
-                                    <TableHead className="text-center text-blue-500 font-black border-y	border-black ">Commits</TableHead>
-                                    <TableHead className="text-center text-black-500 font-black border-y	border-black ">Next Top5</TableHead>
-                                    <TableHead className="text-center text-blue-500 font-black border-y border-r	border-black ">Number Of Authors</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-black border-y	border-black ">{t("authorsPage.commit")}</TableHead>
+                                    <TableHead className="text-center text-black-500 font-black border-y	border-black ">{t("authorsPage.top5Commit")}</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-black border-y border-r	border-black ">{t("authorsPage.countOfAuthor")}</TableHead>
 
 
 
@@ -266,16 +243,16 @@ export function AuthorPage() {
                     <Separator />
 
                     <div className="flex flex-col gap-y-4">
-                        <p className="text-2xl font-bold text-left">Author Of Year</p>
+                        <p className="text-2xl font-bold text-left">{t("authorsPage.yearOfAuthors")}</p>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="text-center text-blue-500 font-bold border-y border-l border-black">Month</TableHead>
-                                    <TableHead className="text-center text-blue-500 font-bold border-y	border-black">Author</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-bold border-y border-l border-black">{t("authorsPage.year")}</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-bold border-y	border-black">{t("authorsPage.author")}</TableHead>
 
-                                    <TableHead className="text-center text-blue-500 font-black border-y	border-black ">Commits</TableHead>
-                                    <TableHead className="text-center text-black-500 font-black border-y	border-black ">Next Top5</TableHead>
-                                    <TableHead className="text-center text-blue-500 font-black border-y border-r	border-black ">Number Of Authors</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-black border-y	border-black ">{t("authorsPage.commit")}</TableHead>
+                                    <TableHead className="text-center text-black-500 font-black border-y	border-black ">{t("authorsPage.top5Commit")}</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-black border-y border-r	border-black ">{t("authorsPage.countOfAuthor")}</TableHead>
 
 
 

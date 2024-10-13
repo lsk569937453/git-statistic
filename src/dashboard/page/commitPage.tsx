@@ -161,7 +161,7 @@ export function ActivityPage() {
 
         return {
             title: {
-                text: '年统计',
+                text: t('activityPage.yearsStatistic'),
                 textStyle: {
                     fontWeight: 700,
                     fontSize: 24,
@@ -209,7 +209,7 @@ export function ActivityPage() {
 
         return {
             title: {
-                text: '年月统计',
+                text: t('activityPage.yearsMonthsStatistic'),
                 textStyle: {
                     fontWeight: 700,
                     fontSize: 24,
@@ -253,7 +253,7 @@ export function ActivityPage() {
         }
         return {
             title: {
-                text: '月统计',
+                text: t('activityPage.monthsStatistic'),
                 textStyle: {
                     fontWeight: 700,
                     fontSize: 24,
@@ -291,7 +291,7 @@ export function ActivityPage() {
         }
         return {
             title: {
-                text: '周统计',
+                text: t('activityPage.weeksStatistic'),
                 textStyle: {
                     fontWeight: 700,
                     fontSize: 24,
@@ -330,7 +330,7 @@ export function ActivityPage() {
         }
         return {
             title: {
-                text: '24小时commit统计',
+                text: t('activityPage.hoursStatistic'),
                 textStyle: {
                     fontWeight: 700,
                     fontSize: 24,
@@ -370,7 +370,7 @@ export function ActivityPage() {
         }
         return {
             title: {
-                text: '最近32周活动',
+                text: t('activityPage.recentWeeks'),
                 textStyle: {
                     fontWeight: 700,
                     fontSize: 24,
@@ -446,7 +446,7 @@ export function ActivityPage() {
                         theme={"theme_name"}
                         option={yearOp()}
                     />
-                    <div className="flex flex-row">
+                    {/* <div className="flex flex-row">
                         <div className="basis-10/12">
                             <ReactEChartsCore
                                 echarts={echarts}
@@ -457,7 +457,7 @@ export function ActivityPage() {
                             />
                         </div>
 
-                    </div>
+                    </div> */}
 
                 </div>
             </ScrollArea>

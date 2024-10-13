@@ -5,6 +5,16 @@
     "messageBody": {
         "sourceShouldNotEmptyText": "请先输入字符串。"
     },
+    "generalPage": {
+        "projectName": "项目名称",
+        "reportGeneratorTime": "报告生成时间",
+        "gitStatisticDateRange": "Git统计日期范围",
+        "projectRange": "项目周期",
+        "fileCount": "文件数量",
+        "totalLines": "总代码行数",
+        "totalCommits": "总Commit数量",
+        "totalAuthors": "项目参与人"
+    },
     "toolBar": {
         "app": {
             "name": "应用",
@@ -40,7 +50,7 @@
         "8": "加密算法"
     },
     "aboutDialog": {
-        "doc": "本地离线小工具库。"
+        "doc": "Git离线分析工具。"
     },
     "preferenceDialog": {
         "resetMenuIndexButtonText": "重置菜单编号"
@@ -49,7 +59,50 @@
         "generalTabName": "通用",
         "activityTabName": "活动统计",
         "authorsTabName": "作者统计",
-        "fileTabName": "文件统计"
+        "fileTabName": "文件统计",
+        "tagTabName": "Tag统计"
+    },
+    "activityPage": {
+        "recentWeeks": "最近32周活动",
+        "hoursStatistic": "24小时活动统计",
+        "weeksStatistic": "周统计",
+        "monthsStatistic": "月统计",
+        "yearsMonthsStatistic": "年月统计",
+        "yearsStatistic": "年统计"
+    },
+    "authorsPage": {
+        "authorList": "作者列表",
+        "monthOfAuthors": "月统计",
+        "yearOfAuthors": "年统计",
+        "author": "作者",
+        "totalCommit": "总提交",
+        "totalAdded": "总添加行数",
+        "totalDeleted": "总删除行数",
+        "firstCommit": "首次提交",
+        "lastCommit": "最后一次提交",
+        "age": "Age",
+        "activeDays": "Active Days",
+        "month": "月",
+        "commit": "提交",
+        "top5Commit": "Top5 提交",
+        "countOfAuthor": "作者数量",
+        "year": "年"
+    },
+    "filePage": {
+        "totalFiles": "总文件数",
+        "totalLines": "总行数",
+        "averageFileSize": "平均文件大小",
+        "extension": "文件扩展名",
+        "filesCount": "文件总数",
+        "linesCount": "行总数"
+    },
+    "tagPage": {
+        "totalTags": "总文件数",
+        "averageCommitPerTag": "每个Tag平均提交数",
+        "date": "日期",
+        "tagName": "Tag名称",
+        "commits": "提交",
+        "authors": "作者列表"
     },
     "formatToolsPage": {
         "buttonText": "格式化",

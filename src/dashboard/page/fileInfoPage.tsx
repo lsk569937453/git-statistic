@@ -71,25 +71,25 @@ export function FileInfoPage() {
                 <Card className="pt-4">
                     <CardContent className="flex flex-col gap-5 text-right">
                         <div className="flex flex-row gap-10">
-                            <p className="basis-2/12 text-lg font-bold">Total Files:</p>
+                            <p className="basis-2/12 text-lg font-bold">{t("filePage.totalFiles")}:</p>
                             <p className="text-lg">{fileBaseInfo?.total_files_count}</p>
                         </div>
                         <div className="flex flex-row gap-10 text-right">
-                            <p className="basis-2/12 text-lg font-bold">Total Lines:</p>
+                            <p className="basis-2/12 text-lg font-bold">{t("filePage.totalLines")}:</p>
                             <p className="text-lg">{fileBaseInfo?.total_lines_count}</p>
                         </div>
                         <div className="flex flex-row gap-10 text-right">
-                            <p className="basis-2/12 text-lg font-bold">Average file size:</p>
+                            <p className="basis-2/12 text-lg font-bold">{t("filePage.averageFileSize")}:</p>
                             <p className="text-lg">{fileBaseInfo?.average_file_size} bytes</p>
                         </div>
                         <Separator />
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="text-center text-blue-500 font-bold border-y border-l border-black">Extensions</TableHead>
-                                    <TableHead className="text-center text-blue-500 font-bold border-y	border-black">Files</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-bold border-y border-l border-black">{t("filePage.extension")}</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-bold border-y	border-black">{t("filePage.filesCount")}</TableHead>
 
-                                    <TableHead className="text-center text-blue-500 font-black border-y border-r	border-black ">Lines</TableHead>
+                                    <TableHead className="text-center text-blue-500 font-black border-y border-r	border-black ">{t("filePage.linesCount")}</TableHead>
 
                                 </TableRow>
 

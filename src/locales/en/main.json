@@ -2,6 +2,57 @@
     "toastMessage": {
         "errorMessageTile": "Error Message"
     },
+    "generalPage": {
+        "projectName": "Project Name",
+        "reportGeneratorTime": "Report Generator Time",
+        "gitStatisticDateRange": "Git Statistic Date Range",
+        "projectRange": "Project Range",
+        "fileCount": "Total File Count",
+        "totalLines": "Total Lines",
+        "totalCommits": "Total Commit Count",
+        "totalAuthors": "Total Authors"
+    },
+    "activityPage": {
+        "recentWeeks": "Recent 32 week",
+        "hoursStatistic": "Hours Statistic",
+        "weeksStatistic": "Weeks Statistic",
+        "monthsStatistic": "Months Statistic",
+        "yearsMonthsStatistic": "Years Months Statistic",
+        "yearsStatistic": "Years Statistic"
+    },
+    "authorsPage": {
+        "authorList": "List Of Authors",
+        "monthOfAuthors": "Month Of Authors",
+        "yearOfAuthors": "Year Of Authors",
+        "author": "Author",
+        "totalCommit": "Total Commit",
+        "totalAdded": "Total Added",
+        "totalDeleted": "Total Deleted",
+        "firstCommit": "First Commit",
+        "lastCommit": "Last Commit",
+        "age": "Age",
+        "activeDays": "Active Days",
+        "month": "Month",
+        "commit": "Commit",
+        "top5Commit": "Next top5",
+        "countOfAuthor": "Number Of Author"
+    },
+    "filePage": {
+        "totalFiles": "Total Files",
+        "totalLines": "Total Lines",
+        "averageFileSize": "Average File Size",
+        "extension": "Extensions",
+        "filesCount": "Files Count",
+        "linesCount": "Lines Count"
+    },
+    "tagPage": {
+        "totalTags": "Total Tags",
+        "averageCommitPerTag": "Average Commits Per Tag",
+        "date": "Date",
+        "tagName": "Name",
+        "commits": "Commit",
+        "authors": "Authors"
+    },
     "toolBar": {
         "app": {
             "name": "App",
@@ -37,7 +88,7 @@
         "8": "Encrypt Tools"
     },
     "aboutDialog": {
-        "doc": "Local offline tools."
+        "doc": "Offline Git Statistic Tools."
     },
     "preferenceDialog": {
         "resetMenuIndexButtonText": "Reset Menu Index"
@@ -46,7 +97,8 @@
         "generalTabName": "General",
         "activityTabName": "Activity",
         "authorsTabName": "Authors",
-        "fileTabName": "Files"
+        "fileTabName": "Files",
+        "tagTabName": "Tags"
     },
     "formatToolsPage": {
         "buttonText": "Format",
