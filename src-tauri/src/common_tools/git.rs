@@ -17,7 +17,7 @@ use tauri::State;
 pub fn get_base_info_with_error(state: State<AppState>) -> Result<GitBaseInfo, anyhow::Error> {
     let sql_lite = state.pool.get()?;
     let connection = &sql_lite;
-    let mut statement = connection.prepare("SELECT age,project_name,generate_time,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count FROM git_base_info")?;
+    let mut statement = connection.prepare("SELECT age,project_name,generate_time,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count,first_commit_time,last_commit_time FROM git_base_info")?;
     let rows: Vec<_> = statement
         .query_map([], |row| {
             Ok(GitBaseInfo {
@@ -31,6 +31,8 @@ pub fn get_base_info_with_error(state: State<AppState>) -> Result<GitBaseInfo, a
                 total_deleted: row.get(7)?,
                 total_commits: row.get(8)?,
                 authors: row.get(9)?,
+                first_commit_time: row.get(10)?,
+                last_commit_time: row.get(11)?,
             })
         })?
         .collect();
@@ -202,10 +204,13 @@ fn clear_data(connection: &Connection) -> Result<(), anyhow::Error> {
             total_added_count INTEGER NOT NULL,
             total_deleted_count INTEGER NOT NULL,
             total_commits_count INTEGER NOT NULL,
-            authors_count INTEGER NOT NULL
+            authors_count INTEGER NOT NULL,
+            first_commit_time TEXT NOT NULL,
+            last_commit_time TEXT NOT NULL
             )",
         params![],
     )?;
+
     connection.execute(
         "CREATE TABLE IF NOT EXISTS git_commit_info (
             id   INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -250,8 +255,9 @@ fn init_statistic_info(
     info!("base info is {}", git_statis_info);
     let base_info = git_statis_info.clone().git_base_info;
     connections.execute(
-        "insert into git_base_info (age,project_name,generate_time,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count) 
-        values (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
+        "insert into git_base_info (age,project_name,generate_time,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count,
+        first_commit_time,last_commit_time) 
+        values (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)",
         params![base_info.age,
         base_info.project_name,
         base_info.generate_time,
@@ -261,7 +267,9 @@ fn init_statistic_info(
             base_info.total_added,
             base_info.total_deleted,
             base_info.total_commits,
-            base_info.authors],
+            base_info.authors,
+            base_info.first_commit_time,
+            base_info.last_commit_time],
     )?;
     save_commit_info(git_statis_info.clone(), &connections)?;
     save_author_info(git_statis_info.clone(), &connections)?;
@@ -492,12 +500,17 @@ fn analyze_base_info(
     revwalk.push(revspec)?;
     let revwalks = revwalk.collect::<Result<Vec<_>, _>>()?;
 
-    let commit = repo.find_commit(*revwalks.first().ok_or(anyhow!(""))?)?;
-    let total_lines_count = get_lines_count(commit.clone(), &repo)?.1;
+    let last_commit_oid = revwalks.first().ok_or(anyhow!(""))?;
+    let last_commit = repo.find_commit(*last_commit_oid)?;
+    let last_commit_time = Utc
+        .timestamp_opt(last_commit.time().seconds(), 0)
+        .single()
+        .ok_or(anyhow!(""))?;
+
+    let total_lines_count = get_lines_count(last_commit.clone(), &repo)?.1;
 
     let (mut added_total, mut deleted_total) = (0, 0);
 
-    let last_commit_oid = revwalks.last().ok_or(anyhow!(""))?;
     let commit_count = revwalks.len();
     info!("real commit count is {}", commit_count);
     let task_results = revwalks
@@ -527,7 +540,6 @@ fn analyze_base_info(
 
                 let author = commit_cloned.author();
                 let author_name = author.name().ok_or(anyhow!("can not find name"))?;
-                // authors.insert(author_name.to_string());
 
                 if a.is_some() {
                     let b = commit.tree()?;
@@ -541,15 +553,12 @@ fn analyze_base_info(
                         }
                         true
                     })?;
-                    // added_total += added;
-                    // deleted_total += deleted;
                 }
                 let commit_time = Utc
                     .timestamp_opt(commit.time().seconds(), 0)
                     .single()
                     .ok_or(anyhow!(""))?;
                 let converted: DateTime<Local> = DateTime::from(commit_time);
-                // git_statistic_info.calc_commit(converted, author_name.to_string(), added, deleted);
                 Ok((converted, author_name.to_string(), added, deleted))
             },
         )
@@ -563,10 +572,10 @@ fn analyze_base_info(
         added_total += added;
         deleted_total += deleted;
     }
-
-    let last_commit = repo.find_commit(*last_commit_oid)?;
+    let first_commit_oid = revwalks.last().ok_or(anyhow!(""))?;
+    let first_commit = repo.find_commit(*first_commit_oid)?;
     let first_commit_time = Utc
-        .timestamp_opt(last_commit.time().seconds(), 0)
+        .timestamp_opt(first_commit.time().seconds(), 0)
         .single()
         .ok_or(anyhow!(""))?;
 
@@ -574,8 +583,7 @@ fn analyze_base_info(
 
     git_statistic_info.file_statistic_info = analyze_files(&repo)?;
 
-    let connections = pool.get()?;
-    git_statistic_info.tag_statistic_info = analyze_tag(&connections, &repo)?;
+    git_statistic_info.tag_statistic_info = analyze_tag(pool.clone(), &repo)?;
     let now = Utc::now();
     let age = now.signed_duration_since(first_commit_time);
 
@@ -597,6 +605,8 @@ fn analyze_base_info(
         total_deleted: deleted_total,
         total_commits,
         authors: authors.len() as i32,
+        first_commit_time: first_commit_time.format("%Y-%m-%d %H:%M:%S").to_string(),
+        last_commit_time: last_commit_time.format("%Y-%m-%d %H:%M:%S").to_string(),
     };
 
     Ok(git_statistic_info)
@@ -677,11 +687,10 @@ fn analyze_files(repo: &Repository) -> Result<FileStatisticInfo, anyhow::Error> 
     Ok(file_statisctic_info)
 }
 fn analyze_tag(
-    connections: &Connection,
+    pool: Pool<SqliteConnectionManager>,
     repo: &Repository,
 ) -> Result<TagStatisticInfo, anyhow::Error> {
     let refs = repo.references()?;
-    let mut map = HashMap::new();
     let mut tag_refs: Vec<(Oid, String)> = vec![];
     for r in refs {
         let r = r?;
@@ -694,10 +703,11 @@ fn analyze_tag(
             }
         }
     }
+    let mut map = HashMap::new();
+    let mut prev: Option<Oid> = None;
 
-    // Process each tag
     for (hash, tag) in tag_refs {
-        let time = if let Ok(commit) = repo
+        let (time, prev_oid) = if let Ok(commit) = repo
             .find_commit(hash)
             .map_err(|e| anyhow!("Can not find commit {}", e))
         {
@@ -705,20 +715,26 @@ fn analyze_tag(
                 .find_commit(hash)
                 .map_err(|e| anyhow!("Can not find commit {}", e))?;
 
-            Utc.timestamp_opt(commit.time().seconds(), 0)
-                .single()
-                .ok_or(anyhow!(""))?
-        } else if let Ok(tag_obj) = repo.find_tag(hash) {
-            Utc.timestamp_opt(
-                tag_obj
-                    .tagger()
-                    .ok_or(anyhow!("Invalid tag time"))?
-                    .when()
-                    .seconds(),
-                0,
+            (
+                Utc.timestamp_opt(commit.time().seconds(), 0)
+                    .single()
+                    .ok_or(anyhow!(""))?,
+                Some(hash),
             )
-            .single()
-            .ok_or(anyhow!("Invalid tag time"))?
+        } else if let Ok(tag_obj) = repo.find_tag(hash) {
+            (
+                Utc.timestamp_opt(
+                    tag_obj
+                        .tagger()
+                        .ok_or(anyhow!("Invalid tag time"))?
+                        .when()
+                        .seconds(),
+                    0,
+                )
+                .single()
+                .ok_or(anyhow!("Invalid tag time"))?,
+                prev,
+            )
         } else {
             Err(anyhow!(""))?
         };
@@ -727,66 +743,76 @@ fn analyze_tag(
 
         map.insert(
             hash,
-            TagStatisticMainInfoItem::new(tag.clone(), year_and_month, 0, vec![]),
+            (
+                TagStatisticMainInfoItem::new(tag.clone(), year_and_month, 0, vec![]),
+                prev,
+            ),
         );
+        prev = prev_oid;
     }
-    let mut prev: Option<Oid> = None;
-    let mut total_commit = 0;
     let tag_count = map.len() as i32;
     info!("real tag count is {}", tag_count);
-    for (tag_oid, tag_info) in map.iter_mut() {
-        connections.execute(
-            "UPDATE git_init_status SET current_tasks = current_tasks + 1",
-            params![],
-        )?;
-        if let Ok(r) = repo.find_commit(*tag_oid) {
-            // Create a hashmap to count commits by author for this tag
-            let mut author_count: HashMap<String, usize> = HashMap::new();
-            let mut commit_count = 0;
+    let repo_path = repo.path();
+    let total_commit = map
+        .par_iter_mut()
+        .map(
+            |(tag_oid, (tag_info, prevs))| -> Result<i32, anyhow::Error> {
+                let repo = Repository::open(repo_path)?;
+                let connections = pool.get()?;
+                connections.execute(
+                    "UPDATE git_init_status SET current_tasks = current_tasks + 1",
+                    params![],
+                )?;
+                let mut commit_count = 0;
 
-            // Get the commit history for this tag
-            let mut revwalk = repo.revwalk()?;
-            revwalk.push(*tag_oid)?;
+                if let Ok(r) = repo.find_commit(*tag_oid) {
+                    let mut author_count: HashMap<String, usize> = HashMap::new();
 
-            for oid in revwalk {
-                let commit_oid = oid?;
-                if let Some(prev_oid) = prev {
-                    if commit_oid == prev_oid {
-                        break; // Stop if we reach the previous tag
+                    let mut revwalk = repo.revwalk()?;
+                    revwalk.push(*tag_oid)?;
+
+                    for oid in revwalk {
+                        let commit_oid = oid?;
+                        if let Some(prev_oid) = prevs {
+                            if commit_oid == *prev_oid {
+                                break; // Stop if we reach the previous tag
+                            }
+                        }
+                        let commit = repo.find_commit(commit_oid)?;
+                        let author_name = commit.author().name().unwrap_or("Unknown").to_string();
+                        commit_count += 1;
+                        // total_commit += 1;
+                        *author_count.entry(author_name).or_insert(0) += 1;
                     }
+                    tag_info.commit_count = commit_count;
+                    tag_info.authors = author_count.into_iter().collect();
                 }
-                let commit = repo.find_commit(commit_oid)?;
-                let author_name = commit.author().name().unwrap_or("Unknown").to_string();
-                // Increment commit count and add to author count
-                commit_count += 1;
-                total_commit += 1;
-                *author_count.entry(author_name).or_insert(0) += 1;
-            }
-            tag_info.commit_count = commit_count;
-            tag_info.authors = author_count.into_iter().collect();
-
-            prev = Some(*tag_oid);
-        }
-    }
+                Ok(commit_count)
+            },
+        )
+        .filter_map(Result::ok) // Filter out errors
+        .reduce(|| 0, |acc, count| acc + count);
 
     let total_tags = map.len() as i32;
-    let val = total_commit as f64 / total_tags as f64;
+    let val = if total_tags == 0 {
+        0.0
+    } else {
+        total_commit as f64 / total_tags as f64
+    };
     let average_commit_per_tag = format!("{:.2}", val);
     let tag_statistic_base_info = TagStatisticBaseInfo {
         total_tags,
         average_commit_per_tag,
     };
     let mut tag_statistic_main_info_list = map
-        .values()
-        .cloned()
+        .into_iter()
+        .map(|(_, (item, _))| item)
         .collect::<Vec<TagStatisticMainInfoItem>>();
     tag_statistic_main_info_list.sort_by(|a, b| b.date.cmp(&a.date));
     for item in tag_statistic_main_info_list.iter_mut() {
-        // Convert HashMap to a Vec of tuples, then sort by the value (usize)
         let mut sorted_authors: Vec<(String, usize)> = item.authors.clone().into_iter().collect();
         sorted_authors.sort_by(|a, b| b.1.cmp(&a.1)); // Sort in descending order
 
-        // Replace the original authors map with the sorted vector converted back into a HashMap
         item.authors = sorted_authors;
     }
     let tag_statustic_info = TagStatisticInfo {

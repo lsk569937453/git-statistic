@@ -84,7 +84,7 @@ export function TagInfoPage() {
                         </div>
 
                         <Separator />
-                        <Table>
+                        <Table >
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="text-center text-blue-500 font-bold border-y border-l border-black">Name</TableHead>
@@ -96,7 +96,7 @@ export function TagInfoPage() {
                                 </TableRow>
 
                             </TableHeader>
-                            <TableBody>
+                            <TableBody className="">
 
                                 {renderTable()}
                             </TableBody>

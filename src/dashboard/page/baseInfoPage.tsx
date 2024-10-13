@@ -50,8 +50,14 @@ export function BaseInfoPage() {
                         <p className="text-lg">{baseInfo?.generate_time}</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
+                        <p className="basis-2/12 text-lg font-bold">Git统计时间:</p>
+                        <p className="text-lg"><span className="mr-2">{baseInfo?.first_commit_time}</span> 至
+                            <span className="ml-2">{baseInfo?.last_commit_time}</span>
+                        </p>
+                    </div>
+                    <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">项目周期:</p>
-                        <p className="text-lg">{baseInfo?.age}天</p>
+                        <p className="text-lg"><span className="mr-2"> {baseInfo?.age}</span>天</p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">项目文件数量:</p>
@@ -59,10 +65,13 @@ export function BaseInfoPage() {
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">总代码行数:</p>
-                        <p className="text-lg font-black">{baseInfo?.total_lines}--添加
-                            <p className="text-green-600 inline-block">{baseInfo?.total_added}</p>行,删除
-                            <p className="text-red-600 inline-block">{baseInfo?.total_deleted}</p>
-                            行</p>
+                        <p>
+                            <span className="text-lg mr-2">{baseInfo?.total_lines}</span>
+                            (添加
+                            <span className="text-green-600 inline-block mx-2">{baseInfo?.total_added}</span> 行,删除
+                            <span className="text-red-600 inline-block mx-2">{baseInfo?.total_deleted}</span>
+                            行)
+                        </p>
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-2/12 text-lg font-bold">总Commit数量:</p>
@@ -75,7 +84,7 @@ export function BaseInfoPage() {
                 </CardContent>
 
             </Card>
-        </div>
+        </div >
 
     );
 }

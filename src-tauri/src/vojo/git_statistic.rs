@@ -19,6 +19,8 @@ pub struct GitBaseInfo {
     pub total_added: i32,
     pub total_deleted: i32,
     pub total_commits: i32,
+    pub first_commit_time: String,
+    pub last_commit_time: String,
     pub authors: i32,
 }
 impl GitBaseInfo {
@@ -34,6 +36,8 @@ impl GitBaseInfo {
             total_deleted: 0,
             total_commits: 0,
             authors: 0,
+            first_commit_time: "".to_string(),
+            last_commit_time: "".to_string(),
         }
     }
 }

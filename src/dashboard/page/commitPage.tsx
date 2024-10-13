@@ -162,6 +162,11 @@ export function ActivityPage() {
         return {
             title: {
                 text: '年统计',
+                textStyle: {
+                    fontWeight: 700,
+                    fontSize: 24,
+                    lineHeight: 32
+                }
             },
             xAxis: {
                 type: 'category',
@@ -205,6 +210,11 @@ export function ActivityPage() {
         return {
             title: {
                 text: '年月统计',
+                textStyle: {
+                    fontWeight: 700,
+                    fontSize: 24,
+                    lineHeight: 32
+                }
             },
             xAxis: {
                 type: 'category',
@@ -244,6 +254,11 @@ export function ActivityPage() {
         return {
             title: {
                 text: '月统计',
+                textStyle: {
+                    fontWeight: 700,
+                    fontSize: 24,
+                    lineHeight: 32
+                }
             },
             xAxis: {
                 type: 'category',
@@ -277,6 +292,11 @@ export function ActivityPage() {
         return {
             title: {
                 text: '周统计',
+                textStyle: {
+                    fontWeight: 700,
+                    fontSize: 24,
+                    lineHeight: 32
+                }
             },
             xAxis: {
                 type: 'category',
@@ -311,6 +331,11 @@ export function ActivityPage() {
         return {
             title: {
                 text: '24小时commit统计',
+                textStyle: {
+                    fontWeight: 700,
+                    fontSize: 24,
+                    lineHeight: 32
+                }
             },
             xAxis: {
                 type: 'category',
@@ -346,6 +371,11 @@ export function ActivityPage() {
         return {
             title: {
                 text: '最近32周活动',
+                textStyle: {
+                    fontWeight: 700,
+                    fontSize: 24,
+                    lineHeight: 32
+                }
             },
             xAxis: {
                 type: 'category',

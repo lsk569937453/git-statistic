@@ -3,7 +3,7 @@ module.exports = {
   darkMode: ["class"],
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
-   
+
     container: {
       center: true,
       padding: "2rem",
@@ -46,7 +46,7 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        searchMarkerColor:{
+        searchMarkerColor: {
           DEFAULT: "hsl(var(--searchMarkerColor))"
         },
       },
@@ -56,8 +56,17 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Inter"],
-        // sans: ["var(--font-sans)", ...fontFamily.sans],
+        sans: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          '"Noto Sans"',
+          'Helvetica',
+          'Arial',
+          'sans-serif',
+          '"Apple Color Emoji"',
+          '"Segoe UI Emoji"'
+        ],        // sans: ["var(--font-sans)", ...fontFamily.sans],
       },
       keyframes: {
         "accordion-down": {
