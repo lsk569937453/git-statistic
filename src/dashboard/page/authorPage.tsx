@@ -151,7 +151,7 @@ export function AuthorPage() {
                 <TableCell className="text-center border border-black">{item.total_deleted} </TableCell>
                 <TableCell className="text-center border border-black">{item.first_commit} </TableCell>
                 <TableCell className="text-center border border-black">{item.last_commit} </TableCell>
-                <TableCell className="text-center border border-black">{item.age} days </TableCell>
+                <TableCell className="text-center border border-black">{item.age} </TableCell>
                 <TableCell className="text-center border border-black">{item.active_days} </TableCell>
 
             </TableRow>

@@ -1,8 +1,8 @@
 use chrono::DateTime;
 use chrono::Datelike;
 use chrono::Local;
+use chrono::NaiveDate;
 use chrono::Timelike;
-use chrono::Utc;
 use core::fmt;
 use serde::Deserialize;
 use serde::Serialize;
@@ -405,11 +405,16 @@ impl GitStatisticInfo {
                 if commit_time > data.last_commit {
                     data.last_commit = commit_time;
                 }
+                let date1 =
+                    NaiveDate::parse_from_str(&data.last_commit, "%Y-%m-%d").unwrap_or_default();
+                let date2 =
+                    NaiveDate::parse_from_str(&data.first_commit, "%Y-%m-%d").unwrap_or_default();
+                data.age = date1.signed_duration_since(date2).num_days() as i32;
                 // e.insert(data.clone());
             }
             std::collections::hash_map::Entry::Vacant(e) => {
-                let now = Utc::now();
-                let age = now.signed_duration_since(time);
+                // let now = Utc::now();
+                // let age = now.signed_duration_since(time);
                 let item = TotalAuthorStatisticInfoItem {
                     author_name: author,
                     total_commit: 1,
@@ -417,7 +422,7 @@ impl GitStatisticInfo {
                     total_deleted,
                     first_commit: commit_time.clone(),
                     last_commit: commit_time,
-                    age: age.num_days() as i32,
+                    age: 0,
                     active_days: 1,
                 };
                 e.insert(item);
