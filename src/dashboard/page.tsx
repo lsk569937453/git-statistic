@@ -44,7 +44,12 @@ export default function DashboardPage() {
 
     const [menulist, setMenulist] = useState<any>([]);
 
-
+    useEffect(() => {
+        const savedLanguage = localStorage.getItem('language');
+        if (savedLanguage) {
+            i18n.changeLanguage(savedLanguage);
+        }
+    }, []);
 
     const handleMenuClick = (index: number) => {
         setSelectedIndex(index);
