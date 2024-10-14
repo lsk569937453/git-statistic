@@ -18,7 +18,6 @@ use tauri::tray::TrayIconBuilder;
 use tauri::tray::TrayIconEvent;
 
 use tauri::Manager;
-mod service;
 fn main() -> Result<(), anyhow::Error> {
     let sql_lite = AppState::new()?;
     tauri::Builder::default()
@@ -42,7 +41,7 @@ fn main() -> Result<(), anyhow::Error> {
             let quit = MenuItem::with_id(app, "quit".to_string(), "退出", true, None::<&str>)?;
             let show = MenuItem::with_id(app, "show".to_string(), "显示", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &quit])?;
-            let tray = TrayIconBuilder::new()
+            let _ = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
                 .menu_on_left_click(true)
@@ -88,7 +87,8 @@ fn main() -> Result<(), anyhow::Error> {
             get_commit_info,
             get_authors_info,
             get_files_info,
-            get_tag_info
+            get_tag_info,
+            cancel_init_task
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

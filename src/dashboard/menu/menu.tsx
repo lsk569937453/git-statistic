@@ -32,7 +32,7 @@ import { Separator } from "@/components/ui/separator"
 import { useTranslation, Trans } from "react-i18next";
 import { CreateLinkDialog } from "./createLinkDialog";
 import * as Progress from "@radix-ui/react-progress";
-import { Button } from "@/components/ui/button"
+import { Button } from "flowbite-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -97,6 +97,13 @@ export function Menu() {
         // setShowLoading(false);
 
     };
+    const handleCancelButtonClick = async () => {
+        const { response_code, response_msg } = JSON.parse(await invoke("cancel_init_task",));
+        if (response_code == 0) {
+            setShowLoading(false);
+            window.location.reload();// 强制页面刷新
+        }
+    }
     const sleep = (time: any) => {
         return new Promise((resolve) => setTimeout(resolve, time));
     }
@@ -160,9 +167,9 @@ export function Menu() {
             <AlertDialog open={showLoading} onOpenChange={setShowLoading}>
 
                 <AlertDialogContent className="w-30 bg-slate-200">
-                    <AlertDialogTitle>正在分析git仓库</AlertDialogTitle>
+                    <AlertDialogTitle>{t("mainDialog.dialogTitle")}</AlertDialogTitle>
                     <div className="flex flex-col gap-4">
-                        <p className="text-center">分析中</p>
+                        <p className="text-center">{t("mainDialog.dialogMainText")}</p>
 
                         <div className="flex flex-row gap-x-4">
                             <Progress.Root
@@ -181,18 +188,24 @@ export function Menu() {
                             {/* <p>{progressValue}%</p><p className="font-bold">[{currentGitProcess}/{totalGitProcess}]</p> */}
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <p className="text-right">状态:</p>
-                            <p>{progressValue}% 完成</p>
+                            {i18n.language === 'zh' && <>
+                                <p className="text-right">状态:</p>
+                                <p>{progressValue}% 完成</p>
+                            </>}
+                            {i18n.language === 'en' && <>
+                                <p className="text-right">Status:</p>
+                                <p>{progressValue}% completed</p>
+                            </>}
 
-                            <p className="text-right">已经完成任务数:</p>
+                            <p className="text-right">{t("mainDialog.taskStatus")}:</p>
                             <p>{currentGitProcess}</p>
 
-                            <p className="text-right">总任务数:</p>
+                            <p className="text-right">{t("mainDialog.taskStatus")}:</p>
                             <p>{totalGitProcess}</p>
                         </div>
 
                     </div>
-                    <Button variant="default" className="bg-red-600">
+                    <Button color="failure" onClick={() => handleCancelButtonClick()}>
                         取消任务
                     </Button>
                 </AlertDialogContent>
@@ -215,10 +228,10 @@ export function Menu() {
                     <MenubarTrigger className="font-bold">{t('toolBar.app.name')}</MenubarTrigger>
                     <MenubarContent>
                         <MenubarItem onClick={() => setShowAboutDialog(true)}>{t('toolBar.app.first_item')}</MenubarItem>
-                        <MenubarSeparator />
-                        <MenubarItem onClick={() => setShowPreferenceDialog(true)}>
+                        {/* <MenubarSeparator /> */}
+                        {/* <MenubarItem onClick={() => setShowPreferenceDialog(true)}>
                             {t('toolBar.app.second_item')}
-                        </MenubarItem>
+                        </MenubarItem> */}
                     </MenubarContent>
                 </MenubarMenu>
                 <MenubarMenu>

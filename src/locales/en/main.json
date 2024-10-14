@@ -10,7 +10,9 @@
         "fileCount": "Total File Count",
         "totalLines": "Total Lines",
         "totalCommits": "Total Commit Count",
-        "totalAuthors": "Total Authors"
+        "totalAuthors": "Total Authors",
+        "to": "To",
+        "day": "Day"
     },
     "activityPage": {
         "recentWeeks": "Recent 32 week",
@@ -90,6 +92,12 @@
         "authorsTabName": "Authors",
         "fileTabName": "Files",
         "tagTabName": "Tags"
+    },
+    "mainDialog": {
+        "dialogTitle": "Analyzing The Git Repository",
+        "dialogMainText": "Please wait for a moment.",
+        "taskStatus": "Task Completed",
+        "totalTasks": "Total Tasks"
     },
     "formatToolsPage": {
         "buttonText": "Format",

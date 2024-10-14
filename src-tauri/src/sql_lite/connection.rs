@@ -1,9 +1,12 @@
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::Result;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 #[derive(Clone)]
 pub struct AppState {
     pub pool: Pool<SqliteConnectionManager>,
+    pub cancel_flag: Arc<AtomicBool>,
 }
 
 impl AppState {
@@ -13,7 +16,8 @@ impl AppState {
         let manager = SqliteConnectionManager::file(db_path)
             .with_init(|c| c.execute_batch("PRAGMA journal_mode=wal;PRAGMA busy_timeout=60000;"));
         let pool = r2d2::Pool::new(manager)?;
+        let cancel_flag = Arc::new(AtomicBool::new(false));
         // let connection = Connection::open(db_path)?;
-        Ok(AppState { pool })
+        Ok(AppState { pool, cancel_flag })
     }
 }

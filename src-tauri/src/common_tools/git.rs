@@ -7,8 +7,6 @@ use chrono::TimeZone;
 use chrono::Utc;
 use git2::Oid;
 use git2::{Commit, DiffFormat, DiffOptions, Repository, TreeWalkMode, TreeWalkResult};
-use r2d2::Pool;
-use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::{params, Connection};
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -134,12 +132,11 @@ fn get_files_count(repo: &Repository) -> Result<i32, anyhow::Error> {
 
 pub fn init_git_with_error(state: AppState, repo_path: String) -> Result<(), anyhow::Error> {
     info!("repo path is {}", repo_path);
-    let cloned_pool = state.pool.clone();
-    let sql_lite = state.pool.get()?;
+    let sql_lite = state.pool.clone().get()?;
     let connection = &sql_lite;
     clear_data(connection)?;
     init_git_tasks(connection, repo_path.clone())?;
-    init_statistic_info(cloned_pool, repo_path.clone())?;
+    init_statistic_info(state, repo_path.clone())?;
     Ok(())
 }
 fn init_git_tasks(connection: &Connection, repo_path: String) -> Result<(), anyhow::Error> {
@@ -246,12 +243,9 @@ fn clear_data(connection: &Connection) -> Result<(), anyhow::Error> {
 
     Ok(())
 }
-fn init_statistic_info(
-    pool: Pool<SqliteConnectionManager>,
-    repo: String,
-) -> Result<(), anyhow::Error> {
-    let git_statis_info = analyze_base_info(pool.clone(), repo)?;
-    let connections = pool.get()?;
+fn init_statistic_info(state: AppState, repo: String) -> Result<(), anyhow::Error> {
+    let git_statis_info = analyze_base_info(state.clone(), repo)?;
+    let connections = state.pool.get()?;
     info!("base info is {}", git_statis_info);
     let base_info = git_statis_info.clone().git_base_info;
     connections.execute(
@@ -488,7 +482,7 @@ fn save_tag_info(
 }
 use rayon::prelude::*;
 fn analyze_base_info(
-    pool: Pool<SqliteConnectionManager>,
+    state: AppState,
     repo_path: String,
 ) -> Result<GitStatisticInfo, anyhow::Error> {
     let mut git_statistic_info = GitStatisticInfo::new();
@@ -520,11 +514,16 @@ fn analyze_base_info(
                 let repo = Repository::open(repo_path.clone())?;
                 let (_, mut diffopts2) = (DiffOptions::new(), DiffOptions::new());
 
-                let connections = pool.get()?;
+                let connections = state.pool.get()?;
                 connections.execute(
                     "UPDATE git_init_status SET current_tasks = current_tasks + 1",
                     params![],
                 )?;
+                let cancel_flag = state.cancel_flag.clone();
+                if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+                    cancel_flag.store(false, std::sync::atomic::Ordering::SeqCst);
+                    return Err(anyhow!("The task has been cancelled."));
+                }
                 let (mut added, mut deleted) = (0, 0);
                 let commitx = *commit;
                 let commit = repo.find_commit(commitx)?;
@@ -583,7 +582,7 @@ fn analyze_base_info(
 
     git_statistic_info.file_statistic_info = analyze_files(&repo)?;
 
-    git_statistic_info.tag_statistic_info = analyze_tag(pool.clone(), &repo)?;
+    git_statistic_info.tag_statistic_info = analyze_tag(state, &repo)?;
     let now = Utc::now();
     let age = now.signed_duration_since(first_commit_time);
 
@@ -627,7 +626,7 @@ fn analyze_files(repo: &Repository) -> Result<FileStatisticInfo, anyhow::Error> 
             .ok()
             .and_then(|o| o.as_blob().cloned())
         {
-            let blob_id = blob.id().to_string();
+            // let blob_id = blob.id().to_string();
             let size = blob.size();
             let fullpath = entry.name().unwrap_or_default();
 
@@ -686,10 +685,7 @@ fn analyze_files(repo: &Repository) -> Result<FileStatisticInfo, anyhow::Error> 
     };
     Ok(file_statisctic_info)
 }
-fn analyze_tag(
-    pool: Pool<SqliteConnectionManager>,
-    repo: &Repository,
-) -> Result<TagStatisticInfo, anyhow::Error> {
+fn analyze_tag(state: AppState, repo: &Repository) -> Result<TagStatisticInfo, anyhow::Error> {
     let refs = repo.references()?;
     let mut tag_refs: Vec<(Oid, String)> = vec![];
     for r in refs {
@@ -707,9 +703,10 @@ fn analyze_tag(
     let mut prev: Option<Oid> = None;
 
     for (hash, tag) in tag_refs {
-        let (time, prev_oid) = if let Ok(commit) = repo
+        let (time, prev_oid) = if repo
             .find_commit(hash)
             .map_err(|e| anyhow!("Can not find commit {}", e))
+            .is_ok()
         {
             let commit = repo
                 .find_commit(hash)
@@ -758,14 +755,19 @@ fn analyze_tag(
         .map(
             |(tag_oid, (tag_info, prevs))| -> Result<i32, anyhow::Error> {
                 let repo = Repository::open(repo_path)?;
-                let connections = pool.get()?;
+                let connections = state.pool.get()?;
                 connections.execute(
                     "UPDATE git_init_status SET current_tasks = current_tasks + 1",
                     params![],
                 )?;
+                let cancel_flag = state.cancel_flag.clone();
+                if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+                    cancel_flag.store(false, std::sync::atomic::Ordering::SeqCst);
+                    return Err(anyhow!("The task has been cancelled."));
+                }
                 let mut commit_count = 0;
 
-                if let Ok(r) = repo.find_commit(*tag_oid) {
+                if repo.find_commit(*tag_oid).is_ok() {
                     let mut author_count: HashMap<String, usize> = HashMap::new();
 
                     let mut revwalk = repo.revwalk()?;

@@ -51,13 +51,13 @@ export function BaseInfoPage() {
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-3/12 text-lg font-bold">{t('generalPage.gitStatisticDateRange')}:</p>
-                        <p className="text-lg"><span className="mr-2">{baseInfo?.first_commit_time}</span> 至
+                        {baseInfo && <p className="text-lg"><span className="mr-2">{baseInfo?.first_commit_time}</span> {t("generalPage.to")}
                             <span className="ml-2">{baseInfo?.last_commit_time}</span>
-                        </p>
+                        </p>}
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-3/12 text-lg font-bold">{t('generalPage.projectRange')}:</p>
-                        <p className="text-lg"><span className="mr-2"> {baseInfo?.age}</span>天</p>
+                        {baseInfo && <p className="text-lg"><span className="mr-2"> {baseInfo?.age}</span>{t("generalPage.day")}</p>}
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-3/12 text-lg font-bold">{t('generalPage.fileCount')}:</p>
@@ -65,8 +65,7 @@ export function BaseInfoPage() {
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-3/12 text-lg font-bold">{t('generalPage.totalLines')}:</p>
-                        <p className="flex items-center"
-                        >
+                        {baseInfo && <p className="flex items-center">
                             <span className="text-lg mr-2">{baseInfo?.total_lines}</span>
                             {i18n.language === 'zh' && <>
                                 (添加
@@ -80,7 +79,7 @@ export function BaseInfoPage() {
                                 <span className="text-red-600 inline-block mx-2">{baseInfo?.total_deleted}</span> removed
                                 )
                             </>}
-                        </p>
+                        </p>}
                     </div>
                     <div className="flex flex-row gap-10 text-right">
                         <p className="basis-3/12 text-lg font-bold">{t('generalPage.totalCommits')}:</p>

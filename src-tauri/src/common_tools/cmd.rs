@@ -129,6 +129,18 @@ pub fn get_init_status(state: State<AppState>) -> String {
     }
 }
 #[tauri::command]
+pub fn cancel_init_task(state: State<AppState>) -> String {
+    let app_state = state.inner().clone();
+    app_state
+        .cancel_flag
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    let res = BaseResponse {
+        response_code: 0,
+        response_msg: 0,
+    };
+    serde_json::to_string(&res).unwrap_or_default()
+}
+#[tauri::command]
 pub fn init_git_async(state: State<AppState>, repo_path: String) -> String {
     let sql_lite = state.inner().clone();
     let repo = Repository::open(repo_path.clone());
@@ -142,7 +154,7 @@ pub fn init_git_async(state: State<AppState>, repo_path: String) -> String {
     thread::spawn({
         move || {
             if let Err(e) = init_git_with_error(sql_lite, repo_path) {
-                error!("error: {:?}", e);
+                error!("error: {}", e);
             }
         }
     });

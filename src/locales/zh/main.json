@@ -13,7 +13,9 @@
         "fileCount": "文件数量",
         "totalLines": "总代码行数",
         "totalCommits": "总Commit数量",
-        "totalAuthors": "项目参与人"
+        "totalAuthors": "项目参与人",
+        "to": "至",
+        "day": "天"
     },
     "menu": {
         "gitPathInvalidMessageBody": "请选择合法的git仓库地址。"
@@ -52,6 +54,12 @@
         "authorsTabName": "作者统计",
         "fileTabName": "文件统计",
         "tagTabName": "Tag统计"
+    },
+    "mainDialog": {
+        "dialogTitle": "正在分析Git仓库",
+        "dialogMainText": "分析中",
+        "taskStatus": "已经完成任务数",
+        "totalTasks": "总任务数"
     },
     "activityPage": {
         "recentWeeks": "最近32周活动",
