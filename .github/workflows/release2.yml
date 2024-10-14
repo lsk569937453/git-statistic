@@ -64,7 +64,10 @@ jobs:
             # Install frontend dependencies
             npm install -g pnpm
             pnpm install
-
+      - name: Install pnpm
+        run: npm install -g pnpm
+      - name: install frontend dependencies
+        run: pnpm install # change this to npm, pnpm or bun depending on which one you use.
             # # Build the application
             # pnpm run tauri build -- --verbose
       - uses: tauri-apps/tauri-action@v0
