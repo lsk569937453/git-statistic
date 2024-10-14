@@ -366,7 +366,7 @@ export function ActivityPage() {
 
         for (var i = 32; i > 0; i--) {
             xdata.push(i);
-            ydata.push(recentWeeksCommit?.[i]);
+            ydata.push(recentWeeksCommit?.[i - 1]);
         }
         return {
             title: {
