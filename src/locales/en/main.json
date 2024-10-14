@@ -97,7 +97,8 @@
         "dialogTitle": "Analyzing The Git Repository",
         "dialogMainText": "Please wait for a moment.",
         "taskStatus": "Task Completed",
-        "totalTasks": "Total Tasks"
+        "totalTasks": "Total Tasks",
+        "cancelButtonText": "Cancel Task"
     },
     "formatToolsPage": {
         "buttonText": "Format",

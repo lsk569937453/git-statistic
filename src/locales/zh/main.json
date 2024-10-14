@@ -59,7 +59,8 @@
         "dialogTitle": "正在分析Git仓库",
         "dialogMainText": "分析中",
         "taskStatus": "已经完成任务数",
-        "totalTasks": "总任务数"
+        "totalTasks": "总任务数",
+        "cancelButtonText": "取消任务"
     },
     "activityPage": {
         "recentWeeks": "最近32周活动",

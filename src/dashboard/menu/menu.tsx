@@ -206,7 +206,7 @@ export function Menu() {
 
                     </div>
                     <Button color="failure" onClick={() => handleCancelButtonClick()}>
-                        取消任务
+                        {t("mainDialog.cancelButtonText")}
                     </Button>
                 </AlertDialogContent>
             </AlertDialog>
