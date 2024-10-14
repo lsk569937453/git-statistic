@@ -69,7 +69,7 @@ jobs:
             pnpm run tauri build -- --verbose
 
       - name: Get app version
-        run: echo "APP_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')" >> $GITHUB_ENV
+        run: echo "APP_VERSION=$(cargo metadata --no-deps --format-version 1 --manifest-path src-tauri/Cargo.toml | jq -r '.packages[0].version')" >> $GITHUB_ENV
 
       # TODO: Combine this with the basic workflow and upload the files to the Release.
       - name: Upload deb bundle
