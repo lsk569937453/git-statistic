@@ -62,7 +62,7 @@ export function Menu() {
     const [totalGitProcess, setTotalGitProcess] = useState(0);
     const { t, i18n } = useTranslation();
     const { toast } = useToast()
-
+    
     const buttonClick = async () => {
         const selected = await open({
             directory: true,
