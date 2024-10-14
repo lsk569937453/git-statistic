@@ -69,23 +69,23 @@ jobs:
             pnpm run tauri build -- --verbose
 
       - name: Get app version
-        run: echo "APP_VERSION=$(jq -r .version src-tauri/tauri.conf.json)" >> $GITHUB_ENV
+        run: echo "APP_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')" >> $GITHUB_ENV
 
       # TODO: Combine this with the basic workflow and upload the files to the Release.
       - name: Upload deb bundle
         uses: actions/upload-artifact@v3
         with:
           name: Debian Bundle
-          path: ${{ github.workspace }}/src-tauri/target/release/bundle/deb/appname_${{ env.APP_VERSION }}_${{ matrix.deb }}.deb
+          path: ${{ github.workspace }}/src-tauri/target/release/bundle/deb/git-statistic_${{ env.APP_VERSION }}_${{ matrix.deb }}.deb
 
       - name: Upload rpm bundle
         uses: actions/upload-artifact@v3
         with:
           name: RPM Bundle
-          path: ${{ github.workspace }}/src-tauri/target/release/bundle/rpm/appname-${{ env.APP_VERSION }}-1.${{ matrix.rpm }}.rpm
+          path: ${{ github.workspace }}/src-tauri/target/release/bundle/rpm/git-statistic-${{ env.APP_VERSION }}-1.${{ matrix.rpm }}.rpm
 
       - name: Upload appimage bundle
         uses: actions/upload-artifact@v3
         with:
           name: AppImage Bundle
-          path: ${{ github.workspace }}/src-tauri/target/release/bundle/appimage/appname_${{ env.APP_VERSION }}_${{ matrix.appimage }}.AppImage
+          path: ${{ github.workspace }}/src-tauri/target/release/bundle/appimage/git-statistic_${{ env.APP_VERSION }}_${{ matrix.appimage }}.AppImage
