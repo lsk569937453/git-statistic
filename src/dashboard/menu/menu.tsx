@@ -32,7 +32,7 @@ import { Separator } from "@/components/ui/separator"
 import { useTranslation, Trans } from "react-i18next";
 import { CreateLinkDialog } from "./createLinkDialog";
 import * as Progress from "@radix-ui/react-progress";
-
+import { Button } from "@/components/ui/button"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -154,23 +154,43 @@ export function Menu() {
     return (
         <div>
             <AlertDialog open={showLoading} onOpenChange={setShowLoading}>
-                <AlertDialogContent className="w-30 ">
-                    <div className="flex flex-row gap-x-4">
-                        <Progress.Root
-                            className="relative h-[25px] w-[300px] overflow-hidden rounded-full bg-slate-300	"
-                            style={{
 
-                                transform: "translateZ(0)",
-                            }}
-                            value={progressValue}
-                        >
-                            <Progress.Indicator
-                                className="ease-[cubic-bezier(0.65, 0, 0.35, 1)] w-full h-full bg-green-500 transition-transform duration-\[660ms\]"
-                                style={{ transform: `translateX(-${100 - progressValue}%)` }}
-                            />
-                        </Progress.Root>
-                        <p>{progressValue}%</p><p className="font-bold">[{currentGitProcess}/{totalGitProcess}]</p>
+                <AlertDialogContent className="w-30 bg-slate-200">
+                    <AlertDialogTitle>正在分析git仓库</AlertDialogTitle>
+                    <div className="flex flex-col gap-4">
+                        <p className="text-center">分析中</p>
+
+                        <div className="flex flex-row gap-x-4">
+                            <Progress.Root
+                                className="relative h-[25px] w-[300px] overflow-hidden rounded-full bg-slate-300	"
+                                style={{
+
+                                    transform: "translateZ(0)",
+                                }}
+                                value={progressValue}
+                            >
+                                <Progress.Indicator
+                                    className="ease-[cubic-bezier(0.65, 0, 0.35, 1)] w-full h-full bg-green-500 transition-transform duration-\[660ms\]"
+                                    style={{ transform: `translateX(-${100 - progressValue}%)` }}
+                                />
+                            </Progress.Root>
+                            {/* <p>{progressValue}%</p><p className="font-bold">[{currentGitProcess}/{totalGitProcess}]</p> */}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <p className="text-right">状态:</p>
+                            <p>{progressValue}% 完成</p>
+
+                            <p className="text-right">已经完成任务数:</p>
+                            <p>{currentGitProcess}</p>
+
+                            <p className="text-right">总任务数:</p>
+                            <p>{totalGitProcess}</p>
+                        </div>
+
                     </div>
+                    <Button variant="default" className="bg-red-600">
+                        取消任务
+                    </Button>
                 </AlertDialogContent>
             </AlertDialog>
             <Menubar className="rounded-none border-b border-none pl-2 lg:pl-3">
@@ -210,6 +230,6 @@ export function Menu() {
                 {/* <MenuModeToggle /> */}
                 <LanguageMenu />
             </Menubar>
-        </div>
+        </div >
     )
 }
