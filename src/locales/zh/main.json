@@ -36,7 +36,7 @@
         },
         "language": {
             "name": "语言",
-            "english": "英语",
+            "english": "英文",
             "chinese": "中文"
         }
     },
@@ -73,11 +73,11 @@
         "lastCommit": "最后一次提交",
         "age": "间隔天数(最后一次提交-首次提交)",
         "activeDays": "活跃天数",
-        "month": "月",
+        "month": "月份",
         "commit": "提交",
         "top5Commit": "Top5 提交",
         "countOfAuthor": "作者数量",
-        "year": "年"
+        "year": "年份"
     },
     "filePage": {
         "totalFiles": "总文件数",
