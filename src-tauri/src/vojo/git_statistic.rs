@@ -298,11 +298,11 @@ impl GitStatisticInfo {
         let now = Local::now();
         let duration = now - time;
         let week = duration.num_weeks() as i32;
-        info!("week: {}", week);
+        // info!("week: {}", week);
         if !(0..=32).contains(&week) {
             return;
         }
-        info!("week:true: {}", week);
+        // info!("week:true: {}", week);
 
         let commit_map = &mut self.commit_info.recent_weeks_commit.commits_map;
         match commit_map.entry(week) {

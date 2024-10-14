@@ -97,6 +97,9 @@ export function Menu() {
         // setShowLoading(false);
 
     };
+    const sleep = (time: any) => {
+        return new Promise((resolve) => setTimeout(resolve, time));
+    }
     useEffect(() => {
         let interval: any;
         console.log(responseCode);
@@ -114,6 +117,7 @@ export function Menu() {
                             setProgressValue(Math.floor((response_msg[0] / response_msg[1]) * 100));
                         }
                         if (response_msg[0] === response_msg[1] && response_msg[1] !== 0) {
+                            await sleep(500);
                             clearInterval(interval);
                             setShowLoading(false);
                             window.location.reload();// 强制页面刷新
