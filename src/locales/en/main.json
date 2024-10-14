@@ -53,6 +53,9 @@
         "commits": "Commit",
         "authors": "Authors"
     },
+    "menu": {
+        "gitPathInvalidMessageBody": "Please select the valid git repository."
+    },
     "toolBar": {
         "app": {
             "name": "App",
@@ -74,18 +77,6 @@
             "english": "English",
             "chinese": "Chinese"
         }
-    },
-    "menu": {
-        "title": "Menu",
-        "0": "Convert Tools",
-        "1": "Format",
-        "2": "Url Encode/Decode",
-        "3": "Message Digest",
-        "4": "Timestamp",
-        "5": "Qrcode/Barcode",
-        "6": "Color Palette",
-        "7": "Text Compare",
-        "8": "Encrypt Tools"
     },
     "aboutDialog": {
         "doc": "Offline Git Statistic Tools."

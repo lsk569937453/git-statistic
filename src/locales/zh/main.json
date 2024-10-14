@@ -15,6 +15,9 @@
         "totalCommits": "总Commit数量",
         "totalAuthors": "项目参与人"
     },
+    "menu": {
+        "gitPathInvalidMessageBody": "请选择合法的git仓库地址。"
+    },
     "toolBar": {
         "app": {
             "name": "应用",
@@ -36,18 +39,6 @@
             "english": "英语",
             "chinese": "中文"
         }
-    },
-    "menu": {
-        "title": "常用工具",
-        "0": "转换工具",
-        "1": "格式化",
-        "2": "Url Encode/Decode",
-        "3": "摘要算法(MD5,SHA)",
-        "4": "时间戳",
-        "5": "二维码/条形码",
-        "6": "调色器",
-        "7": "文本对比",
-        "8": "加密算法"
     },
     "aboutDialog": {
         "doc": "Git离线分析工具。"

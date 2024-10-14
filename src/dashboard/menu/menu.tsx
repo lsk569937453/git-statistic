@@ -62,7 +62,7 @@ export function Menu() {
     const [totalGitProcess, setTotalGitProcess] = useState(0);
     const { t, i18n } = useTranslation();
     const { toast } = useToast()
-    
+
     const buttonClick = async () => {
         const selected = await open({
             directory: true,
@@ -85,10 +85,12 @@ export function Menu() {
             setResponseCode(0);
         }
         else {
+            setShowLoading(false);
+
             toast({
                 variant: "destructive",
                 title: t('toastMessage.errorMessageTile'),
-                description: t('base64ImagePage.base64ShouldNotEmptyMessageBody'),
+                description: t('menu.gitPathInvalidMessageBody'),
             })
         }
         // console.log(selected);

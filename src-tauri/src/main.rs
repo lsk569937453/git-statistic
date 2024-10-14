@@ -81,14 +81,7 @@ fn main() -> Result<(), anyhow::Error> {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            base64_encode,
-            base64_decode,
-            base64_encode_of_image,
-            base64_save_image,
             get_about_version,
-            get_menu_config,
-            set_menu_index,
-            reset_menu_index,
             get_base_info,
             init_git_async,
             get_init_status,
