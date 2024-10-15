@@ -85,28 +85,14 @@ jobs:
       - name: Get app version
         run: echo "APP_VERSION=$(cargo metadata --no-deps --format-version 1 --manifest-path src-tauri/Cargo.toml | jq -r '.packages[0].version')" >> $GITHUB_ENV
 
-      - name: Get the latest draft release
-        id: get_release
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const releases = await github.rest.repos.listReleases({
-              owner: context.repo.owner,
-              repo: context.repo.repo
-            });
-            const draftRelease = releases.data.find(release => release.draft);
-            if (!draftRelease) {
-              throw new Error('No draft release found');
-            }
-            return draftRelease.id;
-          result-encoding: string
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # TODO: Combine this with the basic workflow and upload the files to the Release.
       - name: Upload deb bundle
         uses: softprops/action-gh-release@v1
         with:
           draft: true
-          release_id: ${{ steps.get_release.outputs.result }}
+          prerelease: false
+          tagName: app-v__VERSION__
+          releaseName: 'App v__VERSION__'
           files: ${{ github.workspace }}/src-tauri/target/release/bundle/deb/git-statistic_${{ env.APP_VERSION }}_${{ matrix.deb }}.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -114,16 +100,19 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           draft: true
-          release_id: ${{ steps.get_release.outputs.result }}
-
+          prerelease: false
+          tagName: app-v__VERSION__
+          releaseName: 'App v__VERSION__'
           files: ${{ github.workspace }}/src-tauri/target/release/bundle/rpm/git-statistic-${{ env.APP_VERSION }}-1.${{ matrix.rpm }}.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload appimage bundle
         uses: softprops/action-gh-release@v1
         with:
-          draft: false
-          release_id: ${{ steps.get_release.outputs.result }}
+          draft: true
+          prerelease: false
+          tagName: app-v__VERSION__
+          releaseName: 'App v__VERSION__'
           files: ${{ github.workspace }}/src-tauri/target/release/bundle/appimage/git-statistic_${{ env.APP_VERSION }}_${{ matrix.appimage }}.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
