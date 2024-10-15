@@ -66,43 +66,43 @@ jobs:
             pnpm install
             # # Build the application
             pnpm run tauri build -- --verbose
-      - uses: tauri-apps/tauri-action@v0
+      # - uses: tauri-apps/tauri-action@v0
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
+      #     releaseName: 'App v__VERSION__'
+      #     releaseBody: 'See the assets to download this version and install.'
+      #     releaseDraft: true
+      #     prerelease: false
+      #     tauriBuild: false
+      #     assets:|
+      #       ${{ github.workspace }}/src-tauri/target/release/bundle/deb/git-statistic_${{ env.APP_VERSION }}_${{ matrix.deb }}.deb
+      #       ${{ github.workspace }}/src-tauri/target/release/bundle/rpm/git-statistic-${{ env.APP_VERSION }}-1.${{ matrix.rpm }}.rpm
+      #       ${{ github.workspace }}/src-tauri/target/release/bundle/appimage/git-statistic_${{ env.APP_VERSION }}_${{ matrix.appimage }}.AppImage
+          # args: ${{ matrix.args }}
+      - name: Get app version
+        run: echo "APP_VERSION=$(cargo metadata --no-deps --format-version 1 --manifest-path src-tauri/Cargo.toml | jq -r '.packages[0].version')" >> $GITHUB_ENV
+
+      # TODO: Combine this with the basic workflow and upload the files to the Release.
+      - name: Upload deb bundle
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          files: ${{ github.workspace }}/src-tauri/target/release/bundle/deb/git-statistic_${{ env.APP_VERSION }}_${{ matrix.deb }}.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload rpm bundle
+        uses: softprops/action-gh-release@v1
         with:
-          tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
-          releaseName: 'App v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true
-          prerelease: false
-          tauriBuild: false
-          assets:|
-            ${{ github.workspace }}/src-tauri/target/release/bundle/deb/git-statistic_${{ env.APP_VERSION }}_${{ matrix.deb }}.deb
-            ${{ github.workspace }}/src-tauri/target/release/bundle/rpm/git-statistic-${{ env.APP_VERSION }}-1.${{ matrix.rpm }}.rpm
-            ${{ github.workspace }}/src-tauri/target/release/bundle/appimage/git-statistic_${{ env.APP_VERSION }}_${{ matrix.appimage }}.AppImage
-          # args: ${{ matrix.args }}
-      # - name: Get app version
-      #   run: echo "APP_VERSION=$(cargo metadata --no-deps --format-version 1 --manifest-path src-tauri/Cargo.toml | jq -r '.packages[0].version')" >> $GITHUB_ENV
-
-      # # TODO: Combine this with the basic workflow and upload the files to the Release.
-      # - name: Upload deb bundle
-      #   uses: softprops/action-gh-release@v1
-      #   with:
-      #     draft: true
-      #     files: ${{ github.workspace }}/src-tauri/target/release/bundle/deb/git-statistic_${{ env.APP_VERSION }}_${{ matrix.deb }}.deb
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # - name: Upload rpm bundle
-      #   uses: softprops/action-gh-release@v1
-      #   with:
-      #     draft: true
-      #     files: ${{ github.workspace }}/src-tauri/target/release/bundle/rpm/git-statistic-${{ env.APP_VERSION }}-1.${{ matrix.rpm }}.rpm
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # - name: Upload appimage bundle
-      #   uses: softprops/action-gh-release@v1
-      #   with:
-      #     draft: true
-      #     files: ${{ github.workspace }}/src-tauri/target/release/bundle/appimage/git-statistic_${{ env.APP_VERSION }}_${{ matrix.appimage }}.AppImage
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          draft: true
+          files: ${{ github.workspace }}/src-tauri/target/release/bundle/rpm/git-statistic-${{ env.APP_VERSION }}-1.${{ matrix.rpm }}.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload appimage bundle
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          files: ${{ github.workspace }}/src-tauri/target/release/bundle/appimage/git-statistic_${{ env.APP_VERSION }}_${{ matrix.appimage }}.AppImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
