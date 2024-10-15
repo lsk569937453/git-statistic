@@ -283,7 +283,13 @@ export function ActivityPage() {
         if (!dayOfWeekCommit) {
             return {};
         }
-        const xdata = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+
+        var xdata: any = [];
+        if (i18n.language === 'zh') {
+            xdata = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+        } else {
+            xdata = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        }
         const ydata: any = [];
 
         for (var i = 1; i <= 7; i++) {
