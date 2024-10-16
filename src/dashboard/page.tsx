@@ -48,16 +48,14 @@ export default function DashboardPage() {
         const savedLanguage = localStorage.getItem('language');
         if (savedLanguage) {
             i18n.changeLanguage(savedLanguage);
+            invokeSetLanguage(savedLanguage);
         }
     }, []);
 
-    const handleMenuClick = (index: number) => {
-        setSelectedIndex(index);
+    const invokeSetLanguage = async (lang: string) => {
+        const { response_code, response_msg } = JSON.parse(await invoke("set_language", { language: lang }));
+
     }
-    const renderComponent = (menuIndex: number) => {
-        const selectedMenu = menulist.find((item: any) => item.menuIndex === menuIndex);
-        return selectedMenu ? selectedMenu.render : null;
-    };
     return (
         <>
             <div className=" grid grid-cols-10 relative h-screen divide-x divide-foreground/30">

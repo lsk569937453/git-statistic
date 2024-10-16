@@ -2,17 +2,19 @@ use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::Result;
 use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use tauri::menu::MenuItem;
+use tauri::Wry;
 #[derive(Clone)]
 pub struct AppState {
     pub pool: Pool<SqliteConnectionManager>,
     pub cancel_flag: Arc<AtomicBool>,
-    pub language: LanguageEnum,
+    pub app_tray_menu: Arc<Mutex<Option<AppTrayMenu>>>,
 }
 #[derive(Clone)]
-pub enum LanguageEnum {
-    Chinese,
-    English,
+pub struct AppTrayMenu {
+    pub quit_menu: MenuItem<Wry>,
+    pub show_menu: MenuItem<Wry>,
 }
 impl AppState {
     pub fn new() -> Result<AppState, anyhow::Error> {
@@ -22,12 +24,12 @@ impl AppState {
             .with_init(|c| c.execute_batch("PRAGMA journal_mode=wal;PRAGMA busy_timeout=60000;"));
         let pool = r2d2::Pool::new(manager)?;
         let cancel_flag = Arc::new(AtomicBool::new(false));
-        let language = LanguageEnum::English;
+        let app_tray_menu = Arc::new(Mutex::new(None));
         // let connection = Connection::open(db_path)?;
         Ok(AppState {
             pool,
             cancel_flag,
-            language,
+            app_tray_menu,
         })
     }
 }

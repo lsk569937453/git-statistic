@@ -3,6 +3,8 @@
 mod common_tools;
 mod sql_lite;
 use log::LevelFilter;
+use sql_lite::connection::AppTrayMenu;
+mod service;
 mod vojo;
 use crate::common_tools::cmd::*;
 #[macro_use]
@@ -40,6 +42,17 @@ fn main() -> Result<(), anyhow::Error> {
         .setup(|app| {
             let quit = MenuItem::with_id(app, "quit".to_string(), "Quit", true, None::<&str>)?;
             let show = MenuItem::with_id(app, "show".to_string(), "Show", true, None::<&str>)?;
+
+            let app_statex = app.state::<AppState>();
+
+            {
+                let mut tray_menu = app_statex.app_tray_menu.lock().unwrap();
+                *tray_menu = Some(AppTrayMenu {
+                    quit_menu: quit.clone(),
+                    show_menu: show.clone(),
+                });
+            }
+
             let menu = Menu::with_items(app, &[&show, &quit])?;
             let _ = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
@@ -88,7 +101,8 @@ fn main() -> Result<(), anyhow::Error> {
             get_authors_info,
             get_files_info,
             get_tag_info,
-            cancel_init_task
+            cancel_init_task,
+            set_language,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
