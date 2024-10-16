@@ -200,7 +200,7 @@ export function Menu() {
                             <p className="text-right">{t("mainDialog.taskStatus")}:</p>
                             <p>{currentGitProcess}</p>
 
-                            <p className="text-right">{t("mainDialog.taskStatus")}:</p>
+                            <p className="text-right">{t("mainDialog.totalTasks")}:</p>
                             <p>{totalGitProcess}</p>
                         </div>
 

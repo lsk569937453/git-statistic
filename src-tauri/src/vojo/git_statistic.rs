@@ -3,6 +3,7 @@ use chrono::Datelike;
 use chrono::Local;
 use chrono::NaiveDate;
 use chrono::Timelike;
+use chrono::Utc;
 use core::fmt;
 use serde::Deserialize;
 use serde::Serialize;
@@ -217,11 +218,24 @@ impl TagStatisticMainInfoItem {
 }
 #[derive(Serialize, Deserialize, Clone)]
 
+pub struct LineStatisticInfo {
+    pub total_lines: i32,
+    pub line_statistic_base_info: HashMap<String, LineStatisticInfoItem>,
+}
+#[derive(Serialize, Deserialize, Clone)]
+
+pub struct LineStatisticInfoItem {
+    pub date: String,
+    pub count: i32,
+}
+#[derive(Serialize, Deserialize, Clone)]
+
 pub struct GitStatisticInfo {
     pub git_base_info: GitBaseInfo,
     pub commit_info: CommmitInfo,
     pub author_statistic_info: AuthorStatisticInfo,
     pub file_statistic_info: FileStatisticInfo,
+    pub line_statistic_info: LineStatisticInfo,
     pub tag_statistic_info: TagStatisticInfo,
 }
 impl GitStatisticInfo {
@@ -267,6 +281,10 @@ impl GitStatisticInfo {
                 },
                 file_statistic_extension_info: FileStatisticExtensionInfo { list: Vec::new() },
             },
+            line_statistic_info: LineStatisticInfo {
+                total_lines: 0,
+                line_statistic_base_info: HashMap::new(),
+            },
             tag_statistic_info: TagStatisticInfo {
                 tag_statistic_base_info: TagStatisticBaseInfo {
                     total_tags: 0,
@@ -292,20 +310,25 @@ impl GitStatisticInfo {
 
         self.calc_total_authors(time, author.clone(), total_added, total_deleted);
         self.calc_month_of_year_authors(time, author.clone());
-        self.calc_year_authors(time, author);
+        self.calc_year_authors(time, author.clone());
+
+        self.calc_lines_of_code(time, total_added, total_deleted);
     }
     fn calc_recent_week_commits(&mut self, time: DateTime<Local>) {
-        let now = Local::now();
-        let duration = now - time;
-        let week = duration.num_weeks() as i32;
-        // info!("week: {}", week);
-        if !(0..=32).contains(&week) {
+        let week = time.iso_week().week() as i32;
+        let year = time.iso_week().year();
+        let now = Utc::now();
+        let now_week = now.iso_week().week() as i32;
+        let now_year = now.iso_week().year();
+
+        let week_number = (now_year * 52 + now_week) - (year * 52 + week);
+
+        if !(0..=32).contains(&week_number) {
             return;
         }
-        // info!("week:true: {}", week);
 
         let commit_map = &mut self.commit_info.recent_weeks_commit.commits_map;
-        match commit_map.entry(week) {
+        match commit_map.entry(week_number) {
             std::collections::hash_map::Entry::Occupied(mut e) => {
                 let data = *e.get();
                 e.insert(data + 1);
@@ -482,6 +505,24 @@ impl GitStatisticInfo {
                     AuthorStatisticInfoItem { author, commit: 1 },
                 );
                 e.insert(hash_map);
+            }
+        }
+    }
+    fn calc_lines_of_code(&mut self, time: DateTime<Local>, total_added: i32, total_deleted: i32) {
+        let total = total_added - total_deleted;
+        self.line_statistic_info.total_lines += total;
+        let year_and_month_and_day = time.format("%Y-%m-%d 00:00:00").to_string();
+        let commit_map = &mut self.line_statistic_info.line_statistic_base_info;
+        match commit_map.entry(year_and_month_and_day.clone()) {
+            std::collections::hash_map::Entry::Occupied(mut e) => {
+                let data = e.get_mut();
+                data.count += total;
+            }
+            std::collections::hash_map::Entry::Vacant(e) => {
+                e.insert(LineStatisticInfoItem {
+                    count: total,
+                    date: year_and_month_and_day,
+                });
             }
         }
     }
