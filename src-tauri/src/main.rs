@@ -100,6 +100,7 @@ fn main() -> Result<(), anyhow::Error> {
             get_commit_info,
             get_authors_info,
             get_files_info,
+            get_line_info,
             get_tag_info,
             cancel_init_task,
             set_language,

@@ -1,12 +1,15 @@
+use crate::service::sqlite_service::clear_data;
 use crate::sql_lite::connection::AppState;
 use crate::vojo::author_of_month_response::AuthorOfMonthResponse;
 use crate::vojo::git_statistic::*;
 use chrono::DateTime;
+use chrono::Duration;
 use chrono::Local;
+use chrono::NaiveDateTime;
 use chrono::TimeZone;
 use chrono::Utc;
 use git2::Oid;
-use git2::{Commit, DiffOptions, Repository, TreeWalkMode, TreeWalkResult};
+use git2::{DiffOptions, Repository, TreeWalkMode, TreeWalkResult};
 use rusqlite::{params, Connection};
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -89,6 +92,23 @@ pub fn get_files_info_with_error(
 
     Ok(hash_map)
 }
+pub fn get_line_info_with_error(
+    state: State<AppState>,
+) -> Result<HashMap<String, String>, anyhow::Error> {
+    let sql_lite = state.pool.get()?;
+    let connection = &sql_lite;
+    let mut statement = connection.prepare("SELECT quota_name,quota_value FROM git_line_info")?;
+    let rows: Vec<_> = statement
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .collect();
+    let mut hash_map = HashMap::new();
+    for item in rows {
+        let (key, value) = item?;
+        hash_map.insert(key, value);
+    }
+
+    Ok(hash_map)
+}
 pub fn get_tags_info_with_error(
     state: State<AppState>,
 ) -> Result<HashMap<String, String>, anyhow::Error> {
@@ -120,175 +140,6 @@ pub fn get_init_status_with_error(state: State<AppState>) -> Result<(i32, i32), 
     }
 
     Ok(data)
-}
-fn get_files_count(repo: &Repository) -> Result<i32, anyhow::Error> {
-    let index = repo.index()?;
-    let mut current_lines_count = 0;
-    for _ in index.iter() {
-        current_lines_count += 1;
-    }
-    Ok(current_lines_count)
-}
-
-pub fn init_git_with_error(state: AppState, repo_path: String) -> Result<(), anyhow::Error> {
-    info!("repo path is {}", repo_path);
-    let sql_lite = state.pool.clone().get()?;
-    let connection = &sql_lite;
-    clear_data(connection)?;
-    init_git_tasks(connection, repo_path.clone())?;
-    init_statistic_info(state, repo_path.clone())?;
-    Ok(())
-}
-fn init_git_tasks(connection: &Connection, repo_path: String) -> Result<(), anyhow::Error> {
-    let repo = Repository::open(repo_path.clone())?;
-    let mut revwalk = repo.revwalk()?;
-    let head_ref = repo
-        .head()?
-        .resolve()?
-        .target()
-        .expect("HEAD has no target");
-
-    revwalk.push(head_ref)?;
-    revwalk.simplify_first_parent()?;
-    let commit_task_count = revwalk.collect::<Result<Vec<_>, _>>()?.len();
-    let mut tag_set = HashSet::new();
-    let refs = repo.references()?;
-    for r in refs {
-        let r = r?;
-        if r.shorthand().is_some() {
-            if let Some(target) = r.target() {
-                // Filter tags
-                if r.is_tag() {
-                    tag_set.insert(target);
-                }
-            }
-        }
-    }
-    let tag_task_count = tag_set.len();
-    info!(
-        "tag task count is {},commit task count is {}",
-        tag_task_count, commit_task_count
-    );
-    connection.execute(
-        "insert into git_init_status (current_tasks,total_tasks)
-    values (?1,?2)",
-        params![0, commit_task_count + tag_task_count],
-    )?;
-    Ok(())
-}
-fn clear_data(connection: &Connection) -> Result<(), anyhow::Error> {
-    connection.execute_batch(
-        "DROP TABLE IF EXISTS git_base_info;
-            DROP TABLE IF EXISTS git_commit_info;
-            DROP TABLE IF EXISTS git_author_info;
-            DROP TABLE IF EXISTS git_file_info;
-            DROP TABLE IF EXISTS git_line_info;
-
-            DROP TABLE IF EXISTS git_tag_info;
-            DROP TABLE IF EXISTS git_init_status;
-
-        ",
-    )?;
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS git_init_status (
-            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
-            current_tasks INTEGER NOT NULL, 
-            total_tasks INTEGER NOT NULL
-            )",
-        params![],
-    )?;
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS git_base_info (
-            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
-            project_name TEXT NOT NULL, 
-            generate_time TEXT NOT NULL,
-            age    INTEGER NOT NULL, 
-            active_days  INTEGER NOT NULL,
-            total_files_count INTEGER NOT NULL,
-            total_lines_count INTEGER NOT NULL,
-            total_added_count INTEGER NOT NULL,
-            total_deleted_count INTEGER NOT NULL,
-            total_commits_count INTEGER NOT NULL,
-            authors_count INTEGER NOT NULL,
-            first_commit_time TEXT NOT NULL,
-            last_commit_time TEXT NOT NULL
-            )",
-        params![],
-    )?;
-
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS git_commit_info (
-            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
-            quota_name TEXT NOT NULL, 
-            quota_value TEXT NOT NULL
-            )",
-        params![],
-    )?;
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS git_author_info (
-            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
-            quota_name TEXT NOT NULL, 
-            quota_value TEXT NOT NULL
-            )",
-        params![],
-    )?;
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS git_file_info (
-            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
-            quota_name TEXT NOT NULL, 
-            quota_value TEXT NOT NULL
-            )",
-        params![],
-    )?;
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS git_line_info (
-            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
-            quota_name TEXT NOT NULL, 
-            quota_value TEXT NOT NULL
-            )",
-        params![],
-    )?;
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS git_tag_info (
-            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
-            quota_name TEXT NOT NULL, 
-            quota_value TEXT NOT NULL
-            )",
-        params![],
-    )?;
-
-    Ok(())
-}
-fn init_statistic_info(state: AppState, repo: String) -> Result<(), anyhow::Error> {
-    let git_statis_info = analyze_base_info(state.clone(), repo)?;
-    let connections = state.pool.get()?;
-    info!("base info is {}", git_statis_info);
-    let base_info = git_statis_info.clone().git_base_info;
-    connections.execute(
-        "insert into git_base_info (age,project_name,generate_time,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count,
-        first_commit_time,last_commit_time) 
-        values (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)",
-        params![base_info.age,
-        base_info.project_name,
-        base_info.generate_time,
-            base_info.active_days,
-            base_info.total_files,
-            base_info.total_lines,
-            base_info.total_added,
-            base_info.total_deleted,
-            base_info.total_commits,
-            base_info.authors,
-            base_info.first_commit_time,
-            base_info.last_commit_time],
-    )?;
-    save_commit_info(git_statis_info.clone(), &connections)?;
-    save_author_info(git_statis_info.clone(), &connections)?;
-    save_files_info(git_statis_info.clone(), &connections)?;
-    save_line_info(git_statis_info.clone(), &connections)?;
-
-    save_tag_info(git_statis_info, &connections)?;
-
-    Ok(())
 }
 fn save_commit_info(
     git_statistic_info: GitStatisticInfo,
@@ -472,14 +323,49 @@ fn save_line_info(
     values (?1,?2)",
             params!["line_statistic_total_count", total_lines_string],
         )?;
-    }
-    {
+
         let git_statistic_info_cloned = git_statistic_info.clone();
-        let line_statistic_map = git_statistic_info_cloned
+        let mut line_statistic_map = git_statistic_info_cloned
             .line_statistic_info
             .line_statistic_base_info;
+        let (start_time, end_time) = {
+            let format = "%Y-%m-%d %H:%M:%S";
+            let mut start_time = line_statistic_map.keys().next().ok_or(anyhow!(""))?.clone();
+            let mut end_time = start_time.clone();
+
+            for date_str in line_statistic_map.keys() {
+                if let Ok(date) = NaiveDateTime::parse_from_str(date_str, format) {
+                    if date < NaiveDateTime::parse_from_str(&start_time, format)? {
+                        start_time = date_str.clone();
+                    }
+                    if date > NaiveDateTime::parse_from_str(&end_time, format)? {
+                        end_time = date_str.clone();
+                    }
+                }
+            }
+            (start_time, end_time)
+        };
+
+        let date_strings = {
+            let start_date = NaiveDateTime::parse_from_str(&start_time, "%Y-%m-%d %H:%M:%S")?;
+            let end_date = NaiveDateTime::parse_from_str(&end_time, "%Y-%m-%d %H:%M:%S")?;
+            let mut current_date = start_date;
+            let mut date_strings = Vec::new();
+            while current_date <= end_date {
+                date_strings.push(current_date.format("%Y-%m-%d %H:%M:%S").to_string());
+                current_date += Duration::days(1);
+            }
+            date_strings
+        };
+        for date_string in date_strings {
+            line_statistic_map
+                .entry(date_string.clone())
+                .or_insert(LineStatisticInfoItem {
+                    count: 0,
+                    date: date_string,
+                });
+        }
         let mut list = line_statistic_map.into_iter().collect::<Vec<_>>();
-        // Sort by the keys (String)
         list.sort_by(|a, b| a.0.cmp(&b.0));
         let mut sorted_vec: Vec<LineStatisticInfoItem> =
             list.into_iter().map(|(_, value)| value).collect();
@@ -493,7 +379,7 @@ fn save_line_info(
     values (?1,?2)",
             params!["line_statistic_data", lines_count_data],
         )?;
-    }
+    };
 
     Ok(())
 }
@@ -536,6 +422,93 @@ fn save_tag_info(
 
     Ok(())
 }
+fn get_files_count(repo: &Repository) -> Result<i32, anyhow::Error> {
+    let index = repo.index()?;
+    let mut current_lines_count = 0;
+    for _ in index.iter() {
+        current_lines_count += 1;
+    }
+    Ok(current_lines_count)
+}
+
+pub fn init_git_with_error(state: AppState, repo_path: String) -> Result<(), anyhow::Error> {
+    info!("repo path is {}", repo_path);
+    let sql_lite = state.pool.clone().get()?;
+    let connection = &sql_lite;
+    clear_data(connection)?;
+    init_git_tasks(connection, repo_path.clone())?;
+    init_statistic_info(state, repo_path.clone())?;
+    Ok(())
+}
+fn init_git_tasks(connection: &Connection, repo_path: String) -> Result<(), anyhow::Error> {
+    let repo = Repository::open(repo_path.clone())?;
+    let mut revwalk = repo.revwalk()?;
+    let head_ref = repo
+        .head()?
+        .resolve()?
+        .target()
+        .expect("HEAD has no target");
+
+    revwalk.push(head_ref)?;
+    let commit_task_count = revwalk.collect::<Result<Vec<_>, _>>()?.len();
+    let mut tag_set = HashSet::new();
+    let refs = repo.references()?;
+    for r in refs {
+        let r = r?;
+        if r.shorthand().is_some() {
+            if let Some(target) = r.target() {
+                // Filter tags
+                if r.is_tag() {
+                    tag_set.insert(target);
+                }
+            }
+        }
+    }
+    let tag_task_count = tag_set.len();
+    info!(
+        "tag task count is {},commit task count is {}",
+        tag_task_count, commit_task_count
+    );
+    connection.execute(
+        "insert into git_init_status (current_tasks,total_tasks)
+    values (?1,?2)",
+        params![0, commit_task_count + tag_task_count],
+    )?;
+    Ok(())
+}
+
+fn init_statistic_info(state: AppState, repo: String) -> Result<(), anyhow::Error> {
+    let git_statis_info = analyze_base_info(state.clone(), repo)?;
+    let connections = state.pool.get()?;
+    info!("base info is {}", git_statis_info);
+    let base_info = git_statis_info.clone().git_base_info;
+    connections.execute(
+        "insert into git_base_info (age,project_name,generate_time,active_days,total_files_count,total_lines_count,total_added_count,total_deleted_count,total_commits_count,authors_count,
+        first_commit_time,last_commit_time) 
+        values (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)",
+        params![base_info.age,
+        base_info.project_name,
+        base_info.generate_time,
+            base_info.active_days,
+            base_info.total_files,
+            base_info.total_lines,
+            base_info.total_added,
+            base_info.total_deleted,
+            base_info.total_commits,
+            base_info.authors,
+            base_info.first_commit_time,
+            base_info.last_commit_time],
+    )?;
+    save_commit_info(git_statis_info.clone(), &connections)?;
+    save_author_info(git_statis_info.clone(), &connections)?;
+    save_files_info(git_statis_info.clone(), &connections)?;
+    save_line_info(git_statis_info.clone(), &connections)?;
+
+    save_tag_info(git_statis_info, &connections)?;
+
+    Ok(())
+}
+
 use rayon::prelude::*;
 fn analyze_base_info(
     state: AppState,
@@ -553,7 +526,6 @@ fn analyze_base_info(
         .expect("HEAD has no target");
 
     revwalk.push(head_ref)?;
-    revwalk.simplify_first_parent()?;
     let mut revwalks = revwalk.collect::<Result<Vec<_>, _>>()?;
     revwalks.reverse();
 
@@ -588,7 +560,9 @@ fn analyze_base_info(
                 let (mut added, mut deleted) = (0, 0);
 
                 let commitx = *commit;
-                let commit = repo.find_commit(commitx)?;
+                let commit = repo
+                    .find_commit(commitx)
+                    .map_err(|e| anyhow!("Can not find commit {}", e))?;
                 let author_name = if commit.clone().parent_count() == 0 {
                     let tree = commit.clone().tree()?;
 
@@ -620,10 +594,19 @@ fn analyze_base_info(
                     let author_name = author.name().ok_or(anyhow!("can not find name"))?;
 
                     if a.is_some() {
+                        diffopts2
+                            .force_text(false)
+                            .ignore_whitespace_eol(false)
+                            .ignore_whitespace_change(false)
+                            .ignore_whitespace(false)
+                            .include_ignored(false)
+                            .include_untracked(false)
+                            .patience(false)
+                            .minimal(false);
                         let b = commit.tree()?;
                         let diff =
                             repo.diff_tree_to_tree(a.as_ref(), Some(&b), Some(&mut diffopts2))?;
-                        let stats = git2::Diff::stats(&diff)?;
+                        let stats = diff.stats()?;
 
                         added = stats.insertions() as i32;
                         deleted = stats.deletions() as i32;
@@ -642,7 +625,7 @@ fn analyze_base_info(
         .collect::<Result<Vec<_>, _>>()?;
     let total_commits = get_commit_count(repo_path.clone())?;
     let mut authors = HashSet::new();
-
+    info!("task_results commits count is {}", task_results.len());
     for (converted, author_name, added, deleted) in task_results {
         git_statistic_info.calc_commit(converted, author_name.to_string(), added, deleted);
         authors.insert(author_name);
@@ -659,7 +642,7 @@ fn analyze_base_info(
 
     info!("first commit time is {}", first_commit_time);
 
-    git_statistic_info.file_statistic_info = analyze_files(&repo)?;
+    git_statistic_info.file_statistic_info = analyze_files(&repo, total_lines_count)?;
 
     git_statistic_info.tag_statistic_info = analyze_tag(state, &repo)?;
     let age = { last_commit_time.timestamp() / 86400 - first_commit_time.timestamp() / 86400 + 1 };
@@ -698,17 +681,15 @@ fn get_commit_count(repo_path: String) -> Result<i32, anyhow::Error> {
     revwalk.push_head()?;
     revwalk.set_sorting(git2::Sort::NONE)?;
     let count: usize = revwalk.count();
-    // let revwalks = revwalk.collect::<Result<Vec<_>, _>>()?;
-    // Ok(revwalks.len() as i32)
+
     Ok(count as i32)
 }
-fn analyze_files(repo: &Repository) -> Result<FileStatisticInfo, anyhow::Error> {
+fn analyze_files(repo: &Repository, total_lines: i32) -> Result<FileStatisticInfo, anyhow::Error> {
     let head_commit = repo.head()?.peel_to_commit()?;
     let tree = head_commit.tree()?;
 
     let mut total_size = 0;
     let mut total_files = 0;
-    let mut total_lines = 0;
 
     let mut file_statistic_ext_map = HashMap::new();
     tree.walk(TreeWalkMode::PreOrder, |_, entry| {
@@ -750,7 +731,6 @@ fn analyze_files(repo: &Repository) -> Result<FileStatisticInfo, anyhow::Error> 
                 .or_insert_with(|| FileStatisticExtensionInfoItem::new(ext.clone(), 0, 0));
             data.files_count += 1;
             data.lines_count += line_count as i32;
-            total_lines += line_count as i32;
         }
 
         TreeWalkResult::Ok
@@ -874,7 +854,6 @@ fn analyze_tag(state: AppState, repo: &Repository) -> Result<TagStatisticInfo, a
                         let commit = repo.find_commit(commit_oid)?;
                         let author_name = commit.author().name().unwrap_or("Unknown").to_string();
                         commit_count += 1;
-                        // total_commit += 1;
                         *author_count.entry(author_name).or_insert(0) += 1;
                     }
                     tag_info.commit_count = commit_count;
@@ -915,25 +894,4 @@ fn analyze_tag(state: AppState, repo: &Repository) -> Result<TagStatisticInfo, a
         },
     };
     Ok(tag_statustic_info)
-}
-fn get_lines_count(commit: Commit, repo: &Repository) -> Result<(i32, i32), anyhow::Error> {
-    let tree = commit.tree()?;
-    let (mut total_files, mut total_lines) = (0, 0);
-
-    let _ = tree.walk(TreeWalkMode::PreOrder, |_, entry| {
-        if entry.kind() == Some(git2::ObjectType::Blob) {
-            let obj = entry.to_object(repo).unwrap();
-            let blob = obj.as_blob().ok_or(anyhow!("erros ")).unwrap();
-            let file_lines = blob.content().split(|&c| c == b'\n').count();
-            total_lines += file_lines as i32;
-            total_files += 1;
-        }
-        TreeWalkResult::Ok
-    });
-
-    info!(
-        "Total lines of code in commit: {},total files count:{}",
-        total_lines, total_files
-    );
-    Ok((total_files, total_lines))
 }

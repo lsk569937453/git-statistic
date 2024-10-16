@@ -3,6 +3,7 @@ use chrono::Datelike;
 use chrono::Local;
 use chrono::NaiveDate;
 use chrono::Timelike;
+use chrono::Utc;
 use core::fmt;
 use serde::Deserialize;
 use serde::Serialize;
@@ -311,25 +312,23 @@ impl GitStatisticInfo {
         self.calc_month_of_year_authors(time, author.clone());
         self.calc_year_authors(time, author.clone());
 
-        info!(
-            "author: {},added: {},deleted: {}",
-            author, total_added, total_deleted
-        );
-
         self.calc_lines_of_code(time, total_added, total_deleted);
     }
     fn calc_recent_week_commits(&mut self, time: DateTime<Local>) {
-        let now = Local::now();
-        let duration = now - time;
-        let week = duration.num_weeks() as i32;
-        // info!("week: {}", week);
-        if !(0..=32).contains(&week) {
+        let week = time.iso_week().week() as i32;
+        let year = time.iso_week().year();
+        let now = Utc::now();
+        let now_week = now.iso_week().week() as i32;
+        let now_year = now.iso_week().year();
+
+        let week_number = (now_year * 52 + now_week) - (year * 52 + week);
+
+        if !(0..=32).contains(&week_number) {
             return;
         }
-        // info!("week:true: {}", week);
 
         let commit_map = &mut self.commit_info.recent_weeks_commit.commits_map;
-        match commit_map.entry(week) {
+        match commit_map.entry(week_number) {
             std::collections::hash_map::Entry::Occupied(mut e) => {
                 let data = *e.get();
                 e.insert(data + 1);
@@ -512,7 +511,7 @@ impl GitStatisticInfo {
     fn calc_lines_of_code(&mut self, time: DateTime<Local>, total_added: i32, total_deleted: i32) {
         let total = total_added - total_deleted;
         self.line_statistic_info.total_lines += total;
-        let year_and_month_and_day = time.format("%Y-%m-%d %H:%M:%S").to_string();
+        let year_and_month_and_day = time.format("%Y-%m-%d 00:00:00").to_string();
         let commit_map = &mut self.line_statistic_info.line_statistic_base_info;
         match commit_map.entry(year_and_month_and_day.clone()) {
             std::collections::hash_map::Entry::Occupied(mut e) => {
