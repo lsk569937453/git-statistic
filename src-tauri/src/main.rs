@@ -19,12 +19,12 @@ use tauri::tray::TrayIconEvent;
 
 use tauri::Manager;
 fn main() -> Result<(), anyhow::Error> {
-    let sql_lite = AppState::new()?;
+    let app_state = AppState::new()?;
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .manage(sql_lite)
+        .manage(app_state)
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event.clone() {
                 window.hide().unwrap();
@@ -38,8 +38,8 @@ fn main() -> Result<(), anyhow::Error> {
                 .build(),
         )
         .setup(|app| {
-            let quit = MenuItem::with_id(app, "quit".to_string(), "退出", true, None::<&str>)?;
-            let show = MenuItem::with_id(app, "show".to_string(), "显示", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit".to_string(), "Quit", true, None::<&str>)?;
+            let show = MenuItem::with_id(app, "show".to_string(), "Show", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &quit])?;
             let _ = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
