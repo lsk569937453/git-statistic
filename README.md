@@ -34,7 +34,7 @@ Windows 10 (from version 1803 onward) and later versions of Windows
 ### MacOS
 Install Xcode
 
-### Technology Stack
+## Technology Stack
 
 - [Tauri](https://tauri.app/):The Rust framework for building desktop applications.
 - [Tailwind](https://tailwindcss.com/): A utility-first CSS framework for rapid UI development.
