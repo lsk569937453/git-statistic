@@ -6,7 +6,7 @@ use chrono::Local;
 use chrono::TimeZone;
 use chrono::Utc;
 use git2::Oid;
-use git2::{Commit, DiffFormat, DiffOptions, Repository, TreeWalkMode, TreeWalkResult};
+use git2::{Commit, DiffOptions, Repository, TreeWalkMode, TreeWalkResult};
 use rusqlite::{params, Connection};
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -142,8 +142,14 @@ pub fn init_git_with_error(state: AppState, repo_path: String) -> Result<(), any
 fn init_git_tasks(connection: &Connection, repo_path: String) -> Result<(), anyhow::Error> {
     let repo = Repository::open(repo_path.clone())?;
     let mut revwalk = repo.revwalk()?;
-    let revspec = repo.revparse_single("HEAD")?.id();
-    revwalk.push(revspec)?;
+    let head_ref = repo
+        .head()?
+        .resolve()?
+        .target()
+        .expect("HEAD has no target");
+
+    revwalk.push(head_ref)?;
+    revwalk.simplify_first_parent()?;
     let commit_task_count = revwalk.collect::<Result<Vec<_>, _>>()?.len();
     let mut tag_set = HashSet::new();
     let refs = repo.references()?;
@@ -176,6 +182,8 @@ fn clear_data(connection: &Connection) -> Result<(), anyhow::Error> {
             DROP TABLE IF EXISTS git_commit_info;
             DROP TABLE IF EXISTS git_author_info;
             DROP TABLE IF EXISTS git_file_info;
+            DROP TABLE IF EXISTS git_line_info;
+
             DROP TABLE IF EXISTS git_tag_info;
             DROP TABLE IF EXISTS git_init_status;
 
@@ -233,6 +241,14 @@ fn clear_data(connection: &Connection) -> Result<(), anyhow::Error> {
         params![],
     )?;
     connection.execute(
+        "CREATE TABLE IF NOT EXISTS git_line_info (
+            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
+            quota_name TEXT NOT NULL, 
+            quota_value TEXT NOT NULL
+            )",
+        params![],
+    )?;
+    connection.execute(
         "CREATE TABLE IF NOT EXISTS git_tag_info (
             id   INTEGER PRIMARY KEY AUTOINCREMENT, 
             quota_name TEXT NOT NULL, 
@@ -268,6 +284,8 @@ fn init_statistic_info(state: AppState, repo: String) -> Result<(), anyhow::Erro
     save_commit_info(git_statis_info.clone(), &connections)?;
     save_author_info(git_statis_info.clone(), &connections)?;
     save_files_info(git_statis_info.clone(), &connections)?;
+    save_line_info(git_statis_info.clone(), &connections)?;
+
     save_tag_info(git_statis_info, &connections)?;
 
     Ok(())
@@ -441,6 +459,44 @@ fn save_files_info(
 
     Ok(())
 }
+fn save_line_info(
+    git_statistic_info: GitStatisticInfo,
+    connections: &Connection,
+) -> Result<(), anyhow::Error> {
+    {
+        let git_statistic_info_cloned = git_statistic_info.clone();
+        let total_lines = git_statistic_info_cloned.line_statistic_info.total_lines;
+        let total_lines_string = total_lines.to_string();
+        connections.execute(
+            "insert into git_line_info (quota_name,quota_value)
+    values (?1,?2)",
+            params!["line_statistic_total_count", total_lines_string],
+        )?;
+    }
+    {
+        let git_statistic_info_cloned = git_statistic_info.clone();
+        let line_statistic_map = git_statistic_info_cloned
+            .line_statistic_info
+            .line_statistic_base_info;
+        let mut list = line_statistic_map.into_iter().collect::<Vec<_>>();
+        // Sort by the keys (String)
+        list.sort_by(|a, b| a.0.cmp(&b.0));
+        let mut sorted_vec: Vec<LineStatisticInfoItem> =
+            list.into_iter().map(|(_, value)| value).collect();
+        for i in 1..sorted_vec.len() {
+            sorted_vec[i].count += sorted_vec[i - 1].count;
+        }
+        let lines_count_data = serde_json::to_string(&sorted_vec)?;
+        // Extract the sorted values
+        connections.execute(
+            "insert into git_line_info (quota_name,quota_value)
+    values (?1,?2)",
+            params!["line_statistic_data", lines_count_data],
+        )?;
+    }
+
+    Ok(())
+}
 fn save_tag_info(
     git_statistic_info: GitStatisticInfo,
     connections: &Connection,
@@ -490,23 +546,28 @@ fn analyze_base_info(
 
     let total_files = get_files_count(&repo)?;
     let mut revwalk = repo.revwalk()?;
-    let revspec = repo.revparse_single("HEAD")?.id();
-    revwalk.push(revspec)?;
-    let revwalks = revwalk.collect::<Result<Vec<_>, _>>()?;
+    let head_ref = repo
+        .head()?
+        .resolve()?
+        .target()
+        .expect("HEAD has no target");
 
-    let last_commit_oid = revwalks.first().ok_or(anyhow!(""))?;
+    revwalk.push(head_ref)?;
+    revwalk.simplify_first_parent()?;
+    let mut revwalks = revwalk.collect::<Result<Vec<_>, _>>()?;
+    revwalks.reverse();
+
+    let last_commit_oid = revwalks.last().ok_or(anyhow!(""))?;
     let last_commit = repo.find_commit(*last_commit_oid)?;
     let last_commit_time = Utc
         .timestamp_opt(last_commit.time().seconds(), 0)
         .single()
         .ok_or(anyhow!(""))?;
 
-    let total_lines_count = get_lines_count(last_commit.clone(), &repo)?.1;
+    let mut total_lines_count = 0;
 
     let (mut added_total, mut deleted_total) = (0, 0);
 
-    let commit_count = revwalks.len();
-    info!("real commit count is {}", commit_count);
     let task_results = revwalks
         .par_iter()
         .map(
@@ -525,44 +586,61 @@ fn analyze_base_info(
                     return Err(anyhow!("The task has been cancelled."));
                 }
                 let (mut added, mut deleted) = (0, 0);
+
                 let commitx = *commit;
                 let commit = repo.find_commit(commitx)?;
+                let author_name = if commit.clone().parent_count() == 0 {
+                    let tree = commit.clone().tree()?;
 
-                let commit_cloned = commit.clone();
+                    // First commit has no parent, treat all content as new insertions
+                    let diff_stats = repo.diff_tree_to_tree(None, Some(&tree), None)?.stats()?;
 
-                let a = if commit.parents().len() == 1 {
-                    let parent = commit.parent(0)?;
-                    Some(parent.tree()?)
+                    added = diff_stats.insertions() as i32;
+
+                    commit
+                        .author()
+                        .name()
+                        .ok_or(anyhow!("can not find name"))?
+                        .to_string()
                 } else {
-                    None
+                    let commit_cloned = commit.clone();
+
+                    let a = if commit.parents().len() == 1 {
+                        let parent = commit.parent(0)?;
+                        Some(parent.tree()?)
+                    } else if commit.parents().len() > 1 {
+                        let first_parent_oid = commit.parent_id(0)?;
+                        let first_parent_commit = repo.find_commit(first_parent_oid)?;
+                        Some(first_parent_commit.tree()?)
+                    } else {
+                        None
+                    };
+
+                    let author = commit_cloned.author();
+                    let author_name = author.name().ok_or(anyhow!("can not find name"))?;
+
+                    if a.is_some() {
+                        let b = commit.tree()?;
+                        let diff =
+                            repo.diff_tree_to_tree(a.as_ref(), Some(&b), Some(&mut diffopts2))?;
+                        let stats = git2::Diff::stats(&diff)?;
+
+                        added = stats.insertions() as i32;
+                        deleted = stats.deletions() as i32;
+                    }
+
+                    author_name.to_string()
                 };
-
-                let author = commit_cloned.author();
-                let author_name = author.name().ok_or(anyhow!("can not find name"))?;
-
-                if a.is_some() {
-                    let b = commit.tree()?;
-                    let diff =
-                        repo.diff_tree_to_tree(a.as_ref(), Some(&b), Some(&mut diffopts2))?;
-                    diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
-                        if line.origin() == '+' {
-                            added += 1;
-                        } else if line.origin() == '-' {
-                            deleted += 1;
-                        }
-                        true
-                    })?;
-                }
                 let commit_time = Utc
                     .timestamp_opt(commit.time().seconds(), 0)
                     .single()
                     .ok_or(anyhow!(""))?;
                 let converted: DateTime<Local> = DateTime::from(commit_time);
-                Ok((converted, author_name.to_string(), added, deleted))
+                Ok((converted, author_name, added, deleted))
             },
         )
         .collect::<Result<Vec<_>, _>>()?;
-    let total_commits = task_results.len() as i32;
+    let total_commits = get_commit_count(repo_path.clone())?;
     let mut authors = HashSet::new();
 
     for (converted, author_name, added, deleted) in task_results {
@@ -570,8 +648,9 @@ fn analyze_base_info(
         authors.insert(author_name);
         added_total += added;
         deleted_total += deleted;
+        total_lines_count = total_lines_count + added - deleted;
     }
-    let first_commit_oid = revwalks.last().ok_or(anyhow!(""))?;
+    let first_commit_oid = revwalks.first().ok_or(anyhow!(""))?;
     let first_commit = repo.find_commit(*first_commit_oid)?;
     let first_commit_time = Utc
         .timestamp_opt(first_commit.time().seconds(), 0)
@@ -583,8 +662,7 @@ fn analyze_base_info(
     git_statistic_info.file_statistic_info = analyze_files(&repo)?;
 
     git_statistic_info.tag_statistic_info = analyze_tag(state, &repo)?;
-    let now = Utc::now();
-    let age = now.signed_duration_since(first_commit_time);
+    let age = { last_commit_time.timestamp() / 86400 - first_commit_time.timestamp() / 86400 + 1 };
 
     let project_name = Path::new(&repo_path)
         .file_name()
@@ -596,8 +674,8 @@ fn analyze_base_info(
     git_statistic_info.git_base_info = GitBaseInfo {
         project_name,
         generate_time,
-        age: age.num_days() as i32,
-        active_days: age.num_weeks() as i32,
+        age: age as i32,
+        active_days: age as i32,
         total_files,
         total_lines: total_lines_count,
         total_added: added_total,
@@ -610,10 +688,23 @@ fn analyze_base_info(
 
     Ok(git_statistic_info)
 }
+
+fn get_commit_count(repo_path: String) -> Result<i32, anyhow::Error> {
+    // Open the repository at the current path
+    let repo = Repository::open(repo_path)?;
+
+    // Create a revwalker to traverse commits starting from HEAD
+    let mut revwalk = repo.revwalk()?;
+    revwalk.push_head()?;
+    revwalk.set_sorting(git2::Sort::NONE)?;
+    let count: usize = revwalk.count();
+    // let revwalks = revwalk.collect::<Result<Vec<_>, _>>()?;
+    // Ok(revwalks.len() as i32)
+    Ok(count as i32)
+}
 fn analyze_files(repo: &Repository) -> Result<FileStatisticInfo, anyhow::Error> {
     let head_commit = repo.head()?.peel_to_commit()?;
     let tree = head_commit.tree()?;
-    info!("xxxt");
 
     let mut total_size = 0;
     let mut total_files = 0;
