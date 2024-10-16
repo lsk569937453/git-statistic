@@ -34,4 +34,10 @@ Windows 10 (from version 1803 onward) and later versions of Windows
 ### MacOS
 Install Xcode
 
+### Technology Stack
 
+- [Tauri](https://tauri.app/):The Rust framework for building desktop applications.
+- [Tailwind](https://tailwindcss.com/): A utility-first CSS framework for rapid UI development.
+- [Radix UI](https://www.radix-ui.com/): A set of foundational components, primitives, and tools for building accessible interfaces.
+- [Echarts](https://echarts.apache.org/): A charting library for browser and Node.js.
+- [git2-rs](https://github.com/rust-lang/git2-rs): A Rust library for working with Git.
