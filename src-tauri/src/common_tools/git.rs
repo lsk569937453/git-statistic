@@ -527,15 +527,14 @@ fn analyze_base_info(
         .ok_or(anyhow!(""))?;
 
     let mut total_lines_count = 0;
-    // get_line_count(repo_path.clone())?;
+    let oid_hash_set = get_oid_of_main_line(repo_path.clone())?;
     let (mut added_total, mut deleted_total) = (0, 0);
 
     let task_results = revwalks
         .par_iter()
         .map(
-            |commit| -> Result<(DateTime<Local>, String, i32, i32, Oid, bool), anyhow::Error> {
+            |commit| -> Result<(DateTime<Local>, String, i32, i32, bool), anyhow::Error> {
                 let repo = Repository::open(repo_path.clone())?;
-                let head = repo.head()?;
 
                 let (_, mut diffopts2) = (DiffOptions::new(), DiffOptions::new());
 
@@ -553,7 +552,8 @@ fn analyze_base_info(
                 let commit = repo
                     .find_commit(commitx)
                     .map_err(|e| anyhow!("Can not find commit {}", e))?;
-                let cal_flag = { commit.parent_count() <= 1 };
+                //only calculate the total added,deleted lines for the first parent like --first-parent
+                let cal_flag = { oid_hash_set.contains(&commitx) };
 
                 let commit_cloned = commit.clone();
                 let first_parent_tree = if let Ok(item) = commit.parent(0) {
@@ -570,7 +570,6 @@ fn analyze_base_info(
                     Some(&mut diffopts2),
                 )?;
                 let mut diff_find = DiffFindOptions::new();
-
                 diff.find_similar(Some(&mut diff_find))?;
                 let stats = diff.stats()?;
 
@@ -584,14 +583,14 @@ fn analyze_base_info(
                     .single()
                     .ok_or(anyhow!(""))?;
                 let converted: DateTime<Local> = DateTime::from(commit_time);
-                Ok((converted, author_name, added, deleted, commitx, cal_flag))
+                Ok((converted, author_name, added, deleted, cal_flag))
             },
         )
         .collect::<Result<Vec<_>, _>>()?;
     let total_commits = task_results.len() as i32;
     let mut authors = HashSet::new();
     info!("task_results commits count is {}", task_results.len());
-    for (converted, author_name, added, deleted, oid, cal_flag) in task_results {
+    for (converted, author_name, added, deleted, cal_flag) in task_results {
         git_statistic_info.calc_commit(
             converted,
             author_name.to_string(),
@@ -646,52 +645,18 @@ fn analyze_base_info(
     Ok(git_statistic_info)
 }
 
-fn get_line_count(repo_path: String) -> Result<(i32, i32, i32), anyhow::Error> {
+fn get_oid_of_main_line(repo_path: String) -> Result<HashSet<Oid>, anyhow::Error> {
     let repo = Repository::open(repo_path)?;
     let mut revwalk = repo.revwalk()?;
     revwalk.push_head()?;
-    revwalk.set_sorting(git2::Sort::NONE)?;
     revwalk.simplify_first_parent()?;
-    let mut diffopts2 = DiffOptions::new();
-    diffopts2
-        .force_text(false)
-        .ignore_whitespace_eol(false)
-        .ignore_whitespace_change(false)
-        .ignore_whitespace(false)
-        .include_ignored(false)
-        .include_untracked(false)
-        .patience(false)
-        .minimal(false);
-    let mut total = 0;
-    let mut total_added = 0;
-    let mut total_deleted = 0;
+    let mut hash_set = HashSet::new();
     for item in revwalk {
         let oid = item?;
-        let commit = repo.find_commit(oid)?;
-        let current_tree = commit.tree()?;
-        let parent_tree = if let Ok(item) = commit.parent(0) {
-            Some(item.tree()?)
-        } else {
-            None
-        };
-
-        let diff = repo.diff_tree_to_tree(
-            parent_tree.as_ref(),
-            Some(&current_tree),
-            Some(&mut diffopts2),
-        )?;
-        let stats = diff.stats()?;
-        let inserted = stats.insertions() as i32;
-        let deleted = stats.deletions() as i32;
-        total = total + inserted - deleted;
-        total_added += inserted;
-        total_deleted += deleted;
+        hash_set.insert(oid);
     }
-    info!(
-        "total line count is {}, total added is {}, total deleted is {}",
-        total, total_added, total_deleted
-    );
-    Ok((total, total_added, total_deleted))
+
+    Ok(hash_set)
 }
 fn analyze_files(repo: &Repository, total_lines: i32) -> Result<FileStatisticInfo, anyhow::Error> {
     let head_commit = repo.head()?.peel_to_commit()?;
