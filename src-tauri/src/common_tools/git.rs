@@ -533,12 +533,12 @@ fn analyze_base_info(
     let task_results = revwalks
         .par_iter()
         .map(
-            |commit| -> Result<(DateTime<Local>, String, i32, i32, Oid,bool), anyhow::Error> {
+            |commit| -> Result<(DateTime<Local>, String, i32, i32, Oid, bool), anyhow::Error> {
                 let repo = Repository::open(repo_path.clone())?;
                 let head = repo.head()?;
 
                 let (_, mut diffopts2) = (DiffOptions::new(), DiffOptions::new());
-                
+
                 let connections = state.pool.get()?;
                 connections.execute(
                     "UPDATE git_init_status SET current_tasks = current_tasks + 1",
@@ -553,10 +553,7 @@ fn analyze_base_info(
                 let commit = repo
                     .find_commit(commitx)
                     .map_err(|e| anyhow!("Can not find commit {}", e))?;
-                let cal_flag={
-                    let branch_commit = head.peel_to_commit()?;
-                    repo.graph_ahead_behind(branch_commit.id(), commit.id())?.0 > 0
-                };
+                let cal_flag = { commit.parent_count() <= 1 };
 
                 let commit_cloned = commit.clone();
                 let first_parent_tree = if let Ok(item) = commit.parent(0) {
@@ -572,78 +569,43 @@ fn analyze_base_info(
                     Some(&b),
                     Some(&mut diffopts2),
                 )?;
-                 let mut diff_find=DiffFindOptions::new();
+                let mut diff_find = DiffFindOptions::new();
 
-                diff.find_similar( Some(&mut diff_find))?;
+                diff.find_similar(Some(&mut diff_find))?;
                 let stats = diff.stats()?;
 
                 let added = stats.insertions() as i32;
                 let deleted = stats.deletions() as i32;
-                let changed = stats.files_changed() as i32;
 
                 let author_name = author_name.to_string();
-                if commitx.to_string() == *"80b7d85ad7bca744bdbf614de899040e86bb1b30" {
-                    info!(
-                        "author name is {}, added is {}, deleted is {},oid:{},parent:{},chaned:{},commit parent count :{}",
-                        author_name,
-                        added,
-                        deleted,
-                        commitx,
-                        commit.parent(0).unwrap().id(),
-                        changed,
-                        commit.parent_count()
-                    );
 
-
-    // OIDs of the commits
-                    let commit_a_oid = Oid::from_str("80b7d85ad7bca744bdbf614de899040e86bb1b30")?;
-                    let commit_b_oid = Oid::from_str("45b46d957348f8d53c3132588cab6d53baa35c9c")?;
-
-                    // Look up the commits
-                    let commit_a = repo.find_commit(commit_a_oid)?;
-                    let commit_b = repo.find_commit(commit_b_oid)?;
-
-                    // Get the trees for the commits
-                    let tree_a = commit_a.tree()?;
-                    let tree_b = commit_b.tree()?;
-
-                    // Perform the diff between the two trees
-                    let mut diff_opts = DiffOptions::new();
-                    // diff_opts.disable_pathspec_match(lines)
-                    let mut diff_find=DiffFindOptions::new();
-                    let mut diff = repo.diff_tree_to_tree(Some(&tree_a), Some(&tree_b), Some(&mut diff_opts))?;
-
-                    diff.find_similar(Some(&mut diff_find))?;
-                    // Print the diff
-                                   let statss = diff.stats()?;
-                                   info!("statss is {:?}",statss);
-
-                }
                 let commit_time = Utc
                     .timestamp_opt(commit.time().seconds(), 0)
                     .single()
                     .ok_or(anyhow!(""))?;
                 let converted: DateTime<Local> = DateTime::from(commit_time);
-                Ok((converted, author_name, added, deleted, commitx,cal_flag))
+                Ok((converted, author_name, added, deleted, commitx, cal_flag))
             },
         )
         .collect::<Result<Vec<_>, _>>()?;
     let total_commits = task_results.len() as i32;
     let mut authors = HashSet::new();
     info!("task_results commits count is {}", task_results.len());
-    for (converted, author_name, added, deleted, oid,cal_flag) in task_results {
-        git_statistic_info.calc_commit(converted, author_name.to_string(), added, deleted);
+    for (converted, author_name, added, deleted, oid, cal_flag) in task_results {
+        git_statistic_info.calc_commit(
+            converted,
+            author_name.to_string(),
+            added,
+            deleted,
+            cal_flag,
+        );
         authors.insert(author_name.clone());
 
-        // info!(
-        //     "author name is {}, added is {}, deleted is {},oid:{}",
-        //     author_name, added, deleted, commit
-        // );
         if cal_flag {
-        added_total += added;
-        deleted_total += deleted;
-        total_lines_count = total_lines_count + added - deleted;
-    }
+            added_total += added;
+            deleted_total += deleted;
+            total_lines_count = total_lines_count + added - deleted;
+        }
     }
     let first_commit_oid = revwalks.first().ok_or(anyhow!(""))?;
     let first_commit = repo.find_commit(*first_commit_oid)?;

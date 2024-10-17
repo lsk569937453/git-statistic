@@ -300,6 +300,7 @@ impl GitStatisticInfo {
         author: String,
         total_added: i32,
         total_deleted: i32,
+        calc_flag: bool,
     ) {
         self.calc_recent_week_commits(time);
         self.calc_hours_commit(time);
@@ -312,7 +313,7 @@ impl GitStatisticInfo {
         self.calc_month_of_year_authors(time, author.clone());
         self.calc_year_authors(time, author.clone());
 
-        self.calc_lines_of_code(time, total_added, total_deleted);
+        self.calc_lines_of_code(time, total_added, total_deleted, calc_flag);
     }
     fn calc_recent_week_commits(&mut self, time: DateTime<Local>) {
         let week = time.iso_week().week() as i32;
@@ -508,7 +509,16 @@ impl GitStatisticInfo {
             }
         }
     }
-    fn calc_lines_of_code(&mut self, time: DateTime<Local>, total_added: i32, total_deleted: i32) {
+    fn calc_lines_of_code(
+        &mut self,
+        time: DateTime<Local>,
+        total_added: i32,
+        total_deleted: i32,
+        calc_flag: bool,
+    ) {
+        if !calc_flag {
+            return;
+        }
         let total = total_added - total_deleted;
         self.line_statistic_info.total_lines += total;
         let year_and_month_and_day = time.format("%Y-%m-%d 00:00:00").to_string();
