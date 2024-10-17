@@ -55,6 +55,10 @@
         "commits": "Commit",
         "authors": "Authors"
     },
+    "linePage": {
+        "totalLinesText": "Total Lines",
+        "linesOfCodeText": "Lines Of Code"
+    },
     "menu": {
         "gitPathInvalidMessageBody": "Please select the valid git repository."
     },

@@ -61,18 +61,17 @@ export function LineInfoPage() {
 
                 xAxis: {
                     type: 'category',
-                    data: []  // Empty x-axis data
+                    data: []
                 },
                 yAxis: {
-                    // name: '同步sql条数',
                     type: 'value',
                 },
-                series: []  // No series data
+                series: []
             };
         }
         return {
             title: {
-                text: 'Lines Of Code'
+                text: t("linePage.linesOfCodeText"),
             },
             tooltip: {
                 trigger: 'axis',
@@ -95,7 +94,8 @@ export function LineInfoPage() {
             },
             xAxis: [
                 {
-                    type: 'time', boundaryGap: false,
+                    type: 'time',
+                    // boundaryGap: false,
 
                 }
             ],
@@ -117,7 +117,7 @@ export function LineInfoPage() {
                 <Card className="pt-4">
                     <CardContent className="flex flex-col gap-5 text-right">
                         <div className="flex flex-row gap-10">
-                            <p className="basis-2/12 text-lg font-bold">Total Lines:</p>
+                            <p className="basis-2/12 text-lg font-bold">{t("linePage.totalLinesText")}</p>
                             <p className="text-lg">{totalLines}</p>
                         </div>
 

@@ -104,6 +104,10 @@
         "commits": "提交",
         "authors": "作者列表"
     },
+    "linePage": {
+        "totalLinesText": "总代码行数",
+        "linesOfCodeText": "代码行数"
+    },
     "formatToolsPage": {
         "buttonText": "格式化",
         "formatInputPlaceHolder": "请输入需要格式化的文本"

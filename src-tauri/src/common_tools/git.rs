@@ -451,7 +451,7 @@ fn init_git_tasks(connection: &Connection, repo_path: String) -> Result<(), anyh
 
     revwalk.push(head_ref)?;
     let commit_task_count = revwalk.collect::<Result<Vec<_>, _>>()?.len();
-    let mut tag_set = HashSet::new();
+    let mut tag_set = vec![];
     let refs = repo.references()?;
     for r in refs {
         let r = r?;
@@ -459,7 +459,7 @@ fn init_git_tasks(connection: &Connection, repo_path: String) -> Result<(), anyh
             if let Some(target) = r.target() {
                 // Filter tags
                 if r.is_tag() {
-                    tag_set.insert(target);
+                    tag_set.push(target);
                 }
             }
         }
@@ -673,10 +673,7 @@ fn analyze_base_info(
 }
 
 fn get_commit_count(repo_path: String) -> Result<i32, anyhow::Error> {
-    // Open the repository at the current path
     let repo = Repository::open(repo_path)?;
-
-    // Create a revwalker to traverse commits starting from HEAD
     let mut revwalk = repo.revwalk()?;
     revwalk.push_head()?;
     revwalk.set_sorting(git2::Sort::NONE)?;
@@ -698,7 +695,6 @@ fn analyze_files(repo: &Repository, total_lines: i32) -> Result<FileStatisticInf
             .ok()
             .and_then(|o| o.as_blob().cloned())
         {
-            // let blob_id = blob.id().to_string();
             let size = blob.size();
             let fullpath = entry.name().unwrap_or_default();
 
