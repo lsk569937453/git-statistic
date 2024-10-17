@@ -451,7 +451,7 @@ fn init_git_tasks(connection: &Connection, repo_path: String) -> Result<(), anyh
 
     revwalk.push(head_ref)?;
     let commit_task_count = revwalk.collect::<Result<Vec<_>, _>>()?.len();
-    let mut tag_set = HashSet::new();
+    let mut tag_set = vec![];
     let refs = repo.references()?;
     for r in refs {
         let r = r?;
@@ -459,7 +459,7 @@ fn init_git_tasks(connection: &Connection, repo_path: String) -> Result<(), anyh
             if let Some(target) = r.target() {
                 // Filter tags
                 if r.is_tag() {
-                    tag_set.insert(target);
+                    tag_set.push(target);
                 }
             }
         }
@@ -673,10 +673,7 @@ fn analyze_base_info(
 }
 
 fn get_commit_count(repo_path: String) -> Result<i32, anyhow::Error> {
-    // Open the repository at the current path
     let repo = Repository::open(repo_path)?;
-
-    // Create a revwalker to traverse commits starting from HEAD
     let mut revwalk = repo.revwalk()?;
     revwalk.push_head()?;
     revwalk.set_sorting(git2::Sort::NONE)?;
@@ -698,7 +695,6 @@ fn analyze_files(repo: &Repository, total_lines: i32) -> Result<FileStatisticInf
             .ok()
             .and_then(|o| o.as_blob().cloned())
         {
-            // let blob_id = blob.id().to_string();
             let size = blob.size();
             let fullpath = entry.name().unwrap_or_default();
 
@@ -756,112 +752,116 @@ fn analyze_files(repo: &Repository, total_lines: i32) -> Result<FileStatisticInf
     };
     Ok(file_statisctic_info)
 }
+
 fn analyze_tag(state: AppState, repo: &Repository) -> Result<TagStatisticInfo, anyhow::Error> {
+    #[derive(Clone)]
+    pub struct TagItem {
+        pub tag_name: String,
+        pub tag_oid: Oid,
+        pub date_time: DateTime<Utc>,
+        pub pre_oid: Option<Oid>,
+    }
     let refs = repo.references()?;
-    let mut tag_refs: Vec<(Oid, String)> = vec![];
+    let mut tag_refs = vec![];
     for r in refs {
         let r = r?;
         if let Some(name) = r.shorthand() {
             if let Some(target) = r.target() {
-                // Filter tags
                 if r.is_tag() {
-                    tag_refs.push((target, name.to_string()));
+                    let tag_time = if let Ok(tag) = repo
+                        .find_tag(target)
+                        .map_err(|e| anyhow!("Can not find tag {}", e))
+                    {
+                        tag.tagger().ok_or(anyhow!(""))?.when()
+                    } else {
+                        let tag = repo
+                            .find_commit(target)
+                            .map_err(|e| anyhow!("Can not find commit {}", e))?;
+                        tag.time()
+                    };
+
+                    let date_time = Utc
+                        .timestamp_opt(tag_time.seconds(), 0)
+                        .single()
+                        .ok_or(anyhow!(""))?;
+                    // let date_time_str = date_time.format("%Y-%m-%d %H:%M:%S.%3f").to_string();
+                    tag_refs.push(TagItem {
+                        tag_name: name.to_string(),
+                        tag_oid: target,
+                        date_time,
+                        pre_oid: None,
+                    });
                 }
             }
         }
     }
-    let mut map = HashMap::new();
+    tag_refs.sort_by(|a, b| a.date_time.cmp(&b.date_time));
+
+    let mut map = vec![];
     let mut prev: Option<Oid> = None;
 
-    for (hash, tag) in tag_refs {
-        let (time, prev_oid) = if repo
-            .find_commit(hash)
-            .map_err(|e| anyhow!("Can not find commit {}", e))
-            .is_ok()
-        {
-            let commit = repo
-                .find_commit(hash)
-                .map_err(|e| anyhow!("Can not find commit {}", e))?;
+    for item in tag_refs.iter_mut() {
+        info!("item is {},date:{}", item.tag_name, item.date_time);
+        let tag = &item.tag_name;
 
-            (
-                Utc.timestamp_opt(commit.time().seconds(), 0)
-                    .single()
-                    .ok_or(anyhow!(""))?,
-                Some(hash),
-            )
-        } else if let Ok(tag_obj) = repo.find_tag(hash) {
-            (
-                Utc.timestamp_opt(
-                    tag_obj
-                        .tagger()
-                        .ok_or(anyhow!("Invalid tag time"))?
-                        .when()
-                        .seconds(),
-                    0,
-                )
-                .single()
-                .ok_or(anyhow!("Invalid tag time"))?,
-                prev,
-            )
-        } else {
-            Err(anyhow!(""))?
-        };
-        let converted: DateTime<Local> = DateTime::from(time);
-        let year_and_month = converted.format("%Y-%m-%d").to_string();
+        let year_and_month = item
+            .date_time
+            .clone()
+            .format("%Y-%m-%d %H:%M:%S.%3f")
+            .to_string();
 
-        map.insert(
-            hash,
-            (
-                TagStatisticMainInfoItem::new(tag.clone(), year_and_month, 0, vec![]),
-                prev,
-            ),
-        );
-        prev = prev_oid;
+        item.pre_oid = prev;
+        let cloned_item = item.clone();
+        map.push((
+            TagStatisticMainInfoItem::new(tag.clone(), year_and_month, 0, vec![]),
+            cloned_item,
+        ));
+        prev = Some(item.tag_oid);
     }
     let tag_count = map.len() as i32;
     info!("real tag count is {}", tag_count);
     let repo_path = repo.path();
     let total_commit = map
         .par_iter_mut()
-        .map(
-            |(tag_oid, (tag_info, prevs))| -> Result<i32, anyhow::Error> {
-                let repo = Repository::open(repo_path)?;
-                let connections = state.pool.get()?;
-                connections.execute(
-                    "UPDATE git_init_status SET current_tasks = current_tasks + 1",
-                    params![],
-                )?;
-                let cancel_flag = state.cancel_flag.clone();
-                if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
-                    cancel_flag.store(false, std::sync::atomic::Ordering::SeqCst);
-                    return Err(anyhow!("The task has been cancelled."));
+        .map(|(tag_info, tag_item)| -> Result<i32, anyhow::Error> {
+            let tag_oid = tag_item.tag_oid;
+            let prevs = tag_item.pre_oid;
+            let repo = Repository::open(repo_path)?;
+            let connections = state.pool.get()?;
+            connections.execute(
+                "UPDATE git_init_status SET current_tasks = current_tasks + 1",
+                params![],
+            )?;
+            let cancel_flag = state.cancel_flag.clone();
+            if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+                cancel_flag.store(false, std::sync::atomic::Ordering::SeqCst);
+                return Err(anyhow!("The task has been cancelled."));
+            }
+            let mut commit_count = 0;
+
+            {
+                let mut author_count: HashMap<String, usize> = HashMap::new();
+
+                let mut revwalk = repo.revwalk()?;
+                revwalk.push(tag_oid)?;
+
+                if let Some(prev_oid) = prevs {
+                    revwalk.hide(prev_oid)?;
                 }
-                let mut commit_count = 0;
 
-                if repo.find_commit(*tag_oid).is_ok() {
-                    let mut author_count: HashMap<String, usize> = HashMap::new();
+                for oid in revwalk {
+                    let commit_oid = oid?;
 
-                    let mut revwalk = repo.revwalk()?;
-                    revwalk.push(*tag_oid)?;
-
-                    for oid in revwalk {
-                        let commit_oid = oid?;
-                        if let Some(prev_oid) = prevs {
-                            if commit_oid == *prev_oid {
-                                break; // Stop if we reach the previous tag
-                            }
-                        }
-                        let commit = repo.find_commit(commit_oid)?;
-                        let author_name = commit.author().name().unwrap_or("Unknown").to_string();
-                        commit_count += 1;
-                        *author_count.entry(author_name).or_insert(0) += 1;
-                    }
-                    tag_info.commit_count = commit_count;
-                    tag_info.authors = author_count.into_iter().collect();
+                    let commit = repo.find_commit(commit_oid)?;
+                    let author_name = commit.author().name().unwrap_or("Unknown").to_string();
+                    commit_count += 1;
+                    *author_count.entry(author_name).or_insert(0) += 1;
                 }
-                Ok(commit_count)
-            },
-        )
+                tag_info.commit_count = commit_count;
+                tag_info.authors = author_count.into_iter().collect();
+            }
+            Ok(commit_count)
+        })
         .filter_map(Result::ok) // Filter out errors
         .reduce(|| 0, |acc, count| acc + count);
 
@@ -878,7 +878,7 @@ fn analyze_tag(state: AppState, repo: &Repository) -> Result<TagStatisticInfo, a
     };
     let mut tag_statistic_main_info_list = map
         .into_iter()
-        .map(|(_, (item, _))| item)
+        .map(|(item, _)| item)
         .collect::<Vec<TagStatisticMainInfoItem>>();
     tag_statistic_main_info_list.sort_by(|a, b| b.date.cmp(&a.date));
     for item in tag_statistic_main_info_list.iter_mut() {
