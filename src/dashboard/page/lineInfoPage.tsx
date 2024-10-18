@@ -33,7 +33,7 @@ export function LineInfoPage() {
     const { toast } = useToast()
     const [totalLines, setTotalLines] = useState<any>();
     const [lineData, setLineData] = useState<any>([]);
-
+    const [dirsLineData, setDirsLineData] = useState<any>([]);
     useEffect(() => {
         loadData();
     }, [])
@@ -44,14 +44,16 @@ export function LineInfoPage() {
         console.log(response_msg);
 
         if (response_code === 0) {
-            const { line_statistic_data, line_statistic_total_count
+            const { line_statistic_data, line_statistic_total_count, dir_loc_info
             } = response_msg;
             let lineData = JSON.parse(line_statistic_data);
-            console.log(lineData);
             const result = lineData.map((item: any) => [item.date, item.count]);
 
             setLineData(result);
-
+            let dirLocInfo = JSON.parse(dir_loc_info);
+            const filtered = dirLocInfo.filter((item: any) => !item.dir_name.includes('/'));
+            console.log(filtered);
+            setDirsLineData(filtered);
             setTotalLines(line_statistic_total_count);
         }
     }
@@ -111,6 +113,64 @@ export function LineInfoPage() {
             }
         };
     }
+    const optionsForDataPerMinuteGroupByTaskId2 = () => {
+        if (!lineData || lineData.length === 0) {
+            return {
+
+                xAxis: {
+                    type: 'category',
+                    data: []
+                },
+                yAxis: {
+                    type: 'value',
+                },
+                series: []
+            };
+        }
+        return {
+            title: {
+                text: t("linePage.linesOfCodeText"),
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross',
+                    label: {
+                        backgroundColor: '#6a7985'
+                    }
+                }
+            },
+            legend: {
+                data: dirsLineData.map((task: any) => task.dir_name),
+
+            },
+
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: [
+                {
+                    type: 'time',
+                    // boundaryGap: false,
+
+                }
+            ],
+
+            series:
+                dirsLineData.map((task: any) => ({
+                    name: task.dir_name,  // Sync task name for each series
+                    data: task.data,      // Corresponding logs data
+                    type: 'line',                // Type of chart (bar in this case)
+                    emphasis: {
+                        focus: 'series'
+                    },
+                    showSymbol: false,
+                }))
+        };
+    }
     return (
         <ScrollArea className="h-full">
             <div className="flex flex-col">
@@ -124,6 +184,10 @@ export function LineInfoPage() {
                         <Separator />
                         <div className="basis-1/2 bg-white	rounded-lg p-4">
                             <ReactECharts option={optionsForDataPerMinuteGroupByTaskId()} />
+
+                        </div>
+                        <div className="basis-1/2 bg-white	rounded-lg p-4">
+                            <ReactECharts option={optionsForDataPerMinuteGroupByTaskId2()} />
 
                         </div>
                     </CardContent>
