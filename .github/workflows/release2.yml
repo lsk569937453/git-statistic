@@ -111,8 +111,20 @@ jobs:
         with:
           draft: true
           prerelease: false
-          tag_name: app-v${{ env.APP_VERSION }}   
-          release_name: 'App v${{ env.APP_VERSION }}' 
+          tag_name: ${{ env.APP_VERSION }}   
+          release_name: 'Git Statistic v${{ env.APP_VERSION }}' 
           files: ${{ github.workspace }}/src-tauri/target/release/bundle/appimage/git-statistic_${{ env.APP_VERSION }}_${{ matrix.appimage }}.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Portable Binaries (Windows)
+        if: ${{ matrix.runner == 'windows-latest' }}
+        run: |
+          cargo build --target ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }}
+          mv ./target/${{ matrix.target }}/debug/wooting-profile-switcher.exe ./target/${{ matrix.target }}/debug/WootingProfileSwitcher_${{ github.ref_name }}_x64-portable.exe
+          mv ./target/${{ matrix.target }}/release/wooting-profile-switcher.exe ./target/${{ matrix.target }}/release/WootingProfileSwitcher_${{ github.ref_name }}_x64-portable.exe
+
+      - name: Upload Portable Binaries (Windows)
+        if: ${{ matrix.runner == 'windows-latest' }}
+        run: bash -c 'gh release upload ${{ github.ref_name }} ./target/${{ matrix.target }}/{debug/WootingProfileSwitcher_${{ github.ref_name }}_x64-portable.exe,release/WootingProfileSwitcher_${{ github.ref_name }}_x64-portable.exe} --clobber'
