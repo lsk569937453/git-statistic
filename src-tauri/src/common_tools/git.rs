@@ -573,36 +573,35 @@ fn analyze_base_info(
                 )?;
                 let mut diff_find = DiffFindOptions::new();
                 diff.find_similar(Some(&mut diff_find))?;
-                // diff.
-                // let stats = diff.stats()?;
-
-                // let added = stats.insertions() as i32;
-                // let deleted = stats.deletions() as i32;
 
                 let mut added = 0;
                 let mut deleted = 0;
+                let mut hash_map = HashMap::new();
                 diff.print(DiffFormat::Patch, |delta, _hunk, line| {
                     let status = delta.status();
                     match status {
                         Delta::Added | Delta::Modified | Delta::Deleted => {
                             if let Some(new_file) = delta.new_file().path() {
                                 let filename = new_file.display().to_string();
-                                // Find existing entry or create new one
                                 let current_added = if line.origin() == '+' { 1 } else { 0 };
                                 let current_deleted = if line.origin() == '-' { 1 } else { 0 };
 
                                 added += current_added;
                                 deleted += current_deleted;
-                                info!(
-                                    "current_added is {},current_deleted is {},filename:{}",
-                                    current_added, current_deleted, filename
-                                );
+                                hash_map
+                                    .entry(filename.clone())
+                                    .and_modify(|(a, b)| {
+                                        *a += current_added;
+                                        *b += current_deleted;
+                                    })
+                                    .or_insert((current_added, current_deleted));
                             }
                         }
                         _ => (),
                     }
                     true
                 })?;
+                info!("map is {:?}", hash_map);
 
                 let author_name = author_name.to_string();
 
