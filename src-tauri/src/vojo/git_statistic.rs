@@ -536,23 +536,6 @@ impl GitStatisticInfo {
         file_add_del_map: HashMap<String, (i32, i32)>,
         calc_flag: bool,
     ) {
-        {
-            let year_and_month_and_day = time.format("%Y-%m-%d 00:00:00").to_string();
-            let commit_map = &mut self.line_statistic_info.directory_loc_info;
-            for (file_name, (item_total_added, itemtotal_deleted)) in file_add_del_map {
-                let dirs = get_dirs(file_name.as_str());
-                for dir in dirs {
-                    let total = item_total_added - itemtotal_deleted;
-                    let dir_map = commit_map.entry(dir.clone()).or_default();
-
-                    let line_info = dir_map.entry(year_and_month_and_day.clone()).or_insert(
-                        LineStatisticInfoItem::new(year_and_month_and_day.clone(), 0),
-                    );
-                    line_info.update(total);
-                }
-            }
-            // info!("commit_map is {:?}", commit_map);
-        }
         if !calc_flag {
             return;
         }
@@ -573,6 +556,23 @@ impl GitStatisticInfo {
                     });
                 }
             }
+        }
+        {
+            let year_and_month_and_day = time.format("%Y-%m-%d 00:00:00").to_string();
+            let commit_map = &mut self.line_statistic_info.directory_loc_info;
+            for (file_name, (item_total_added, itemtotal_deleted)) in file_add_del_map {
+                let dirs = get_dirs(file_name.as_str());
+                for dir in dirs {
+                    let total = item_total_added - itemtotal_deleted;
+                    let dir_map = commit_map.entry(dir.clone()).or_default();
+
+                    let line_info = dir_map.entry(year_and_month_and_day.clone()).or_insert(
+                        LineStatisticInfoItem::new(year_and_month_and_day.clone(), 0),
+                    );
+                    line_info.update(total);
+                }
+            }
+            // info!("commit_map is {:?}", commit_map);
         }
     }
 }

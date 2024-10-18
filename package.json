@@ -64,6 +64,7 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.45.2",
     "react-i18next": "^13.5.0",
+    "react-select": "^5.8.1",
     "recharts": "^2.7.2",
     "tailwind-scrollbar": "^3.0.4",
     "tailwindcss-animate": "^1.0.6",
