@@ -8,7 +8,9 @@ use chrono::Local;
 use chrono::NaiveDateTime;
 use chrono::TimeZone;
 use chrono::Utc;
+use git2::Delta;
 use git2::DiffFindOptions;
+use git2::DiffFormat;
 use git2::Oid;
 use git2::{DiffOptions, Repository, TreeWalkMode, TreeWalkResult};
 use rusqlite::{params, Connection};
@@ -571,10 +573,36 @@ fn analyze_base_info(
                 )?;
                 let mut diff_find = DiffFindOptions::new();
                 diff.find_similar(Some(&mut diff_find))?;
-                let stats = diff.stats()?;
+                // diff.
+                // let stats = diff.stats()?;
 
-                let added = stats.insertions() as i32;
-                let deleted = stats.deletions() as i32;
+                // let added = stats.insertions() as i32;
+                // let deleted = stats.deletions() as i32;
+
+                let mut added = 0;
+                let mut deleted = 0;
+                diff.print(DiffFormat::Patch, |delta, _hunk, line| {
+                    let status = delta.status();
+                    match status {
+                        Delta::Added | Delta::Modified | Delta::Deleted => {
+                            if let Some(new_file) = delta.new_file().path() {
+                                let filename = new_file.display().to_string();
+                                // Find existing entry or create new one
+                                let current_added = if line.origin() == '+' { 1 } else { 0 };
+                                let current_deleted = if line.origin() == '-' { 1 } else { 0 };
+
+                                added += current_added;
+                                deleted += current_deleted;
+                                info!(
+                                    "current_added is {},current_deleted is {},filename:{}",
+                                    current_added, current_deleted, filename
+                                );
+                            }
+                        }
+                        _ => (),
+                    }
+                    true
+                })?;
 
                 let author_name = author_name.to_string();
 
