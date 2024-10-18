@@ -6,7 +6,7 @@ use log::LevelFilter;
 use sql_lite::connection::AppTrayMenu;
 mod service;
 mod vojo;
-use crate::common_tools::cmd::*;
+use crate::service::cmd::*;
 #[macro_use]
 extern crate anyhow;
 #[macro_use]

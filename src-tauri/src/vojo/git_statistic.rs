@@ -221,13 +221,24 @@ impl TagStatisticMainInfoItem {
 pub struct LineStatisticInfo {
     pub total_lines: i32,
     pub line_statistic_base_info: HashMap<String, LineStatisticInfoItem>,
+    pub directory_loc_info: HashMap<String, HashMap<String, LineStatisticInfoItem>>,
 }
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default, Debug)]
 
 pub struct LineStatisticInfoItem {
     pub date: String,
     pub count: i32,
 }
+
+impl LineStatisticInfoItem {
+    fn update(&mut self, total: i32) {
+        self.count += total;
+    }
+    pub fn new(date: String, count: i32) -> Self {
+        Self { date, count }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 
 pub struct GitStatisticInfo {
@@ -284,6 +295,7 @@ impl GitStatisticInfo {
             line_statistic_info: LineStatisticInfo {
                 total_lines: 0,
                 line_statistic_base_info: HashMap::new(),
+                directory_loc_info: HashMap::new(),
             },
             tag_statistic_info: TagStatisticInfo {
                 tag_statistic_base_info: TagStatisticBaseInfo {
@@ -300,6 +312,8 @@ impl GitStatisticInfo {
         author: String,
         total_added: i32,
         total_deleted: i32,
+        file_add_del_map: HashMap<String, (i32, i32)>,
+        calc_flag: bool,
     ) {
         self.calc_recent_week_commits(time);
         self.calc_hours_commit(time);
@@ -312,7 +326,13 @@ impl GitStatisticInfo {
         self.calc_month_of_year_authors(time, author.clone());
         self.calc_year_authors(time, author.clone());
 
-        self.calc_lines_of_code(time, total_added, total_deleted);
+        self.calc_lines_of_code(
+            time,
+            total_added,
+            total_deleted,
+            file_add_del_map,
+            calc_flag,
+        );
     }
     fn calc_recent_week_commits(&mut self, time: DateTime<Local>) {
         let week = time.iso_week().week() as i32;
@@ -508,22 +528,51 @@ impl GitStatisticInfo {
             }
         }
     }
-    fn calc_lines_of_code(&mut self, time: DateTime<Local>, total_added: i32, total_deleted: i32) {
-        let total = total_added - total_deleted;
-        self.line_statistic_info.total_lines += total;
-        let year_and_month_and_day = time.format("%Y-%m-%d 00:00:00").to_string();
-        let commit_map = &mut self.line_statistic_info.line_statistic_base_info;
-        match commit_map.entry(year_and_month_and_day.clone()) {
-            std::collections::hash_map::Entry::Occupied(mut e) => {
-                let data = e.get_mut();
-                data.count += total;
+    fn calc_lines_of_code(
+        &mut self,
+        time: DateTime<Local>,
+        total_added: i32,
+        total_deleted: i32,
+        file_add_del_map: HashMap<String, (i32, i32)>,
+        calc_flag: bool,
+    ) {
+        if !calc_flag {
+            return;
+        }
+        {
+            let total = total_added - total_deleted;
+            self.line_statistic_info.total_lines += total;
+            let year_and_month_and_day = time.format("%Y-%m-%d 00:00:00").to_string();
+            let commit_map = &mut self.line_statistic_info.line_statistic_base_info;
+            match commit_map.entry(year_and_month_and_day.clone()) {
+                std::collections::hash_map::Entry::Occupied(mut e) => {
+                    let data = e.get_mut();
+                    data.count += total;
+                }
+                std::collections::hash_map::Entry::Vacant(e) => {
+                    e.insert(LineStatisticInfoItem {
+                        count: total,
+                        date: year_and_month_and_day,
+                    });
+                }
             }
-            std::collections::hash_map::Entry::Vacant(e) => {
-                e.insert(LineStatisticInfoItem {
-                    count: total,
-                    date: year_and_month_and_day,
-                });
+        }
+        {
+            let year_and_month_and_day = time.format("%Y-%m-%d 00:00:00").to_string();
+            let commit_map = &mut self.line_statistic_info.directory_loc_info;
+            for (file_name, (item_total_added, itemtotal_deleted)) in file_add_del_map {
+                let dirs = get_dirs(file_name.as_str());
+                for dir in dirs {
+                    let total = item_total_added - itemtotal_deleted;
+                    let dir_map = commit_map.entry(dir.clone()).or_default();
+
+                    let line_info = dir_map.entry(year_and_month_and_day.clone()).or_insert(
+                        LineStatisticInfoItem::new(year_and_month_and_day.clone(), 0),
+                    );
+                    line_info.update(total);
+                }
             }
+            // info!("commit_map is {:?}", commit_map);
         }
     }
 }
@@ -531,4 +580,21 @@ impl fmt::Display for GitStatisticInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", serde_json::to_string(self).unwrap())
     }
+}
+pub fn get_dirs(input: &str) -> Vec<String> {
+    let mut results = Vec::new();
+    let splits = input.split("/").collect::<Vec<&str>>();
+    if splits.is_empty() || splits.len() == 1 {
+        return results;
+    }
+
+    let mut temp = splits[0].to_string();
+    results.push(temp.clone());
+    for i in 1..(splits.len() - 1) {
+        let current = format!("{}/{}", temp, splits[i]);
+        results.push(current.clone());
+        temp = current;
+    }
+    // info!("dirs is {:?},src:{}", results, input);
+    results
 }

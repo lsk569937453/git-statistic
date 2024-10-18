@@ -3,19 +3,19 @@ use std::thread;
 use crate::common_tools::about::get_about_version_with_error;
 use crate::common_tools::base_response::BaseResponse;
 
-use crate::common_tools::git::get_base_info_with_error;
-use crate::common_tools::git::get_commit_info_with_error;
-use crate::common_tools::git::init_git_with_error;
+use crate::service::git_service::init_git_with_error;
 use crate::service::menu_service::set_language_with_error;
 use crate::sql_lite::connection::AppState;
 use git2::Repository;
 use tauri::State;
 
-use super::git::get_authors_info_with_error;
-use super::git::get_files_info_with_error;
-use super::git::get_init_status_with_error;
-use super::git::get_line_info_with_error;
-use super::git::get_tags_info_with_error;
+use super::authors_service::get_authors_info_with_error;
+use super::base_info_service::get_base_info_with_error;
+use super::commit_info_service::get_commit_info_with_error;
+use super::file_info_service::get_files_info_with_error;
+use super::git_service::get_init_status_with_error;
+use super::line_info_service::get_line_info_with_error;
+use super::tags_info_service::get_tags_info_with_error;
 #[tauri::command]
 pub fn get_base_info(state: State<AppState>) -> String {
     match get_base_info_with_error(state) {
