@@ -138,11 +138,11 @@ jobs:
           args: ${{ matrix.args }}
 
       - name: Build Portable Binaries (Windows)
-        if: ${{ matrix.runner == 'windows-latest' }}
+        if: ${{ matrix.platform == 'windows-latest' }}
         run: |
           cargo build --release --target ${{ matrix.target }}
           mv ./target/${{ matrix.target }}/release/git-statistic.exe ./target/${{ matrix.target }}/release/git-statistic_${{ github.ref_name }}_x64-portable.exe
 
       - name: Upload Portable Binaries (Windows)
-        if: ${{ matrix.runner == 'windows-latest' }}
+        if: ${{ matrix.platform == 'windows-latest' }}
         run: bash -c 'gh release upload ${{ github.ref_name }} ./target/${{ matrix.target }}/release/git-statistic_${{ github.ref_name }}_x64-portable.exe --clobber'
