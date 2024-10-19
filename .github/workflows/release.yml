@@ -125,13 +125,15 @@ jobs:
         run: npm install -g pnpm
       - name: install frontend dependencies
         run: pnpm install # change this to npm, pnpm or bun depending on which one you use.
+      - name: Get app version
+        run: echo "APP_VERSION=$(cargo metadata --no-deps --format-version 1 --manifest-path src-tauri/Cargo.toml | jq -r '.packages[0].version')" >> $GITHUB_ENV
 
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: __VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
-          releaseName: 'Git Statistic v__VERSION__'
+          releaseName: 'Git Statistic __VERSION__'
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: true
           prerelease: false
@@ -141,10 +143,10 @@ jobs:
         if: ${{ matrix.platform == 'windows-latest' }}
         run: |
           pnpm run tauri build
-          mv ./src-tauri/target/release/git-statistic.exe ./src-tauri/target/release/git-statistic_${{ github.ref_name }}_x64-portable.exe
+          mv ./src-tauri/target/release/git-statistic.exe ./src-tauri/target/release/git-statistic_${{ env.APP_VERSION }}_x64-portable.exe
 
       - name: Upload Portable Binaries (Windows)
         if: ${{ matrix.platform == 'windows-latest' }}
-        run: bash -c 'gh release upload ${{ github.ref_name }} ./src-tauri/target/release/git-statistic_${{ github.ref_name }}_x64-portable.exe --clobber'
+        run: bash -c 'gh release upload ${{ env.APP_VERSION }} ./src-tauri/target/release/git-statistic_${{ env.APP_VERSION }}_x64-portable.exe --clobber'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
