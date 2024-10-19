@@ -141,8 +141,8 @@ jobs:
         if: ${{ matrix.platform == 'windows-latest' }}
         run: |
           pnpm run tauri build
-          mv ./target/release/git-statistic.exe ./target/release/git-statistic_${{ github.ref_name }}_x64-portable.exe
+          mv ./src-tauri/target/release/git-statistic.exe ./src-tauri/target/release/git-statistic_${{ github.ref_name }}_x64-portable.exe
 
       - name: Upload Portable Binaries (Windows)
         if: ${{ matrix.platform == 'windows-latest' }}
-        run: bash -c 'gh release upload ${{ github.ref_name }} ./target/release/git-statistic_${{ github.ref_name }}_x64-portable.exe --clobber'
+        run: bash -c 'gh release upload ${{ github.ref_name }} ./src-tauri/target/release/git-statistic_${{ github.ref_name }}_x64-portable.exe --clobber'
