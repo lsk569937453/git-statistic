@@ -63,3 +63,6 @@ debug = false
 
 [env]
 STATIC_VCRUNTIME = false
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2"
