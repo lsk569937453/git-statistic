@@ -111,8 +111,9 @@ jobs:
         with:
           draft: true
           prerelease: false
-          tag_name: app-v${{ env.APP_VERSION }}   
-          release_name: 'App v${{ env.APP_VERSION }}' 
+          tag_name: ${{ env.APP_VERSION }}   
+          release_name: 'Git Statistic v${{ env.APP_VERSION }}' 
           files: ${{ github.workspace }}/src-tauri/target/release/bundle/appimage/git-statistic_${{ env.APP_VERSION }}_${{ matrix.appimage }}.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
