@@ -4,7 +4,6 @@ use crate::common_tools::about::get_about_version_with_error;
 use crate::common_tools::base_response::BaseResponse;
 
 use crate::service::git_service::init_git_with_error;
-use crate::service::menu_service::set_language_with_error;
 use crate::sql_lite::connection::AppState;
 use git2::Repository;
 use tauri::State;
@@ -161,25 +160,7 @@ pub fn cancel_init_task(state: State<AppState>) -> String {
     };
     serde_json::to_string(&res).unwrap_or_default()
 }
-#[tauri::command]
-pub fn set_language(state: State<AppState>, language: String) -> String {
-    match set_language_with_error(state, language) {
-        Ok(item) => {
-            let res = BaseResponse {
-                response_code: 0,
-                response_msg: item,
-            };
-            serde_json::to_string(&res).unwrap()
-        }
-        Err(e) => {
-            let res = BaseResponse {
-                response_code: 1,
-                response_msg: e.to_string(),
-            };
-            serde_json::to_string(&res).unwrap()
-        }
-    }
-}
+
 #[tauri::command]
 pub fn init_git_async(state: State<AppState>, repo_path: String) -> String {
     let sql_lite = state.inner().clone();
