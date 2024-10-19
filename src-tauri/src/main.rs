@@ -3,7 +3,6 @@
 mod common_tools;
 mod sql_lite;
 use log::LevelFilter;
-use sql_lite::connection::AppTrayMenu;
 mod service;
 mod vojo;
 use crate::service::cmd::*;
@@ -13,11 +12,6 @@ extern crate anyhow;
 extern crate log;
 
 use crate::sql_lite::connection::AppState;
-use tauri::menu::{Menu, MenuItem};
-use tauri::tray::MouseButton;
-use tauri::tray::MouseButtonState;
-use tauri::tray::TrayIconBuilder;
-use tauri::tray::TrayIconEvent;
 
 use tauri::Manager;
 fn main() -> Result<(), anyhow::Error> {
@@ -45,59 +39,6 @@ fn main() -> Result<(), anyhow::Error> {
                 .level(LevelFilter::Info)
                 .build(),
         )
-        .setup(|app| {
-            let quit = MenuItem::with_id(app, "quit".to_string(), "Quit", true, None::<&str>)?;
-            let show = MenuItem::with_id(app, "show".to_string(), "Show", true, None::<&str>)?;
-
-            let app_statex = app.state::<AppState>();
-
-            {
-                let mut tray_menu = app_statex.app_tray_menu.lock().unwrap();
-                *tray_menu = Some(AppTrayMenu {
-                    quit_menu: quit.clone(),
-                    show_menu: show.clone(),
-                });
-            }
-
-            let menu = Menu::with_items(app, &[&show, &quit])?;
-            let _ = TrayIconBuilder::new()
-                .icon(app.default_window_icon().unwrap().clone())
-                .menu(&menu)
-                .menu_on_left_click(true)
-                .on_menu_event(|app, event| match event.id.as_ref() {
-                    "quit" => {
-                        info!("quit menu item was clicked");
-                        app.exit(0);
-                    }
-                    "show" => {
-                        let window = app.get_webview_window("main").unwrap();
-                        window.show().unwrap();
-                    }
-                    _ => {
-                        info!("menu item {:?} not handled", event);
-                    }
-                })
-                .on_tray_icon_event(|tray, event| match event {
-                    TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
-                        ..
-                    } => {
-                        info!("left click pressed and released");
-                        let app = tray.app_handle();
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
-                    _ => {
-                        // info!("unhandled event {event:?}");
-                    }
-                })
-                .build(app)?;
-
-            Ok(())
-        })
         .invoke_handler(tauri::generate_handler![
             get_about_version,
             get_base_info,
@@ -109,7 +50,6 @@ fn main() -> Result<(), anyhow::Error> {
             get_line_info,
             get_tag_info,
             cancel_init_task,
-            set_language,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

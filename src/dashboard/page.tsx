@@ -48,14 +48,10 @@ export default function DashboardPage() {
         const savedLanguage = localStorage.getItem('language');
         if (savedLanguage) {
             i18n.changeLanguage(savedLanguage);
-            invokeSetLanguage(savedLanguage);
         }
     }, []);
 
-    const invokeSetLanguage = async (lang: string) => {
-        const { response_code, response_msg } = JSON.parse(await invoke("set_language", { language: lang }));
 
-    }
     return (
         <>
             <div className=" grid grid-cols-10 relative h-screen divide-x divide-foreground/30">
