@@ -38,24 +38,14 @@ export function LineInfoPage() {
     const [currentInput, setCurrentInput] = useState();
     const { toast } = useToast()
     const [totalLines, setTotalLines] = useState<any>();
-    const [lineData, setLineData] = useState<any>([]);
     const [dirsLineData, setDirsLineData] = useState<any>([]);
     const [totalDirsLineData, setTotalDirsLineData] = useState<any>([]);
-    const [dirOptions, setDirOptions] = useState<any>([]);
+    const [selectDirOptions, setSelectDirOptions] = useState<any>([]);
+    const [currentSelectDirs, setCurrentSelectDirs] = useState<any>([]);
     useEffect(() => {
         loadData();
     }, [])
 
-    const options = [
-        { value: 'chocolatessssssssssssssssssssssssssssssssss', label: 'chocolatessssssssssssssssssssssssssssssssss' },
-        { value: 'strawberry', label: 'Strawberry' },
-        { value: 'vanilla', label: 'Vanilla' },
-        { value: 'chocolatessssssssssssssssssssssssssssssssss2', label: 'chocolatessssssssssssssssssssssssssssssssss2' },
-        { value: 'chocolatessssssssssssssssssssssssssssssssss3', label: 'chocolatessssssssssssssssssssssssssssssssss3' },
-        { value: 'chocolatessssssssssssssssssssssssssssssssss4', label: 'chocolatessssssssssssssssssssssssssssssssss4' }
-
-
-    ];
     useEffect(() => {
         if (chartRef.current) {
             const chartInstance = chartRef.current.getEchartsInstance();
@@ -63,7 +53,7 @@ export function LineInfoPage() {
                 replaceMerge: ['series'], // Use this option correctly
             });
         }
-    }, [dirsLineData]); // Trigger when dirsLineData changes
+    }, [dirsLineData]);
 
     const loadData = async () => {
 
@@ -72,76 +62,42 @@ export function LineInfoPage() {
         console.log(response_msg);
 
         if (response_code === 0) {
-            const { line_statistic_data, line_statistic_total_count, dir_loc_info
+            const { line_statistic_total_count, dir_loc_info, dirs_for_line_info
             } = response_msg;
-            let lineData = JSON.parse(line_statistic_data);
-            const result = lineData.map((item: any) => [item.date, item.count]);
-
-            setLineData(result);
             let dirLocInfo = JSON.parse(dir_loc_info);
-            let dirOptions = dirLocInfo.map((item: any) => ({ value: item.dir_name, label: item.dir_name }));
+            console.log(dirLocInfo);
+            let selectDirOptions = dirLocInfo.map((item: any) => ({ value: item.dir_name, label: item.dir_name }));
+            selectDirOptions.sort((a: any, b: any) => {
+                const countSlashes = (str: any) => (str.match(/\//g) || []).length;
+                const slashCountDiff = countSlashes(a.value) - countSlashes(b.value);
 
-            setDirOptions(dirOptions);
+                if (slashCountDiff !== 0) {
+                    return slashCountDiff;
+                }
+                const valueA = a.value.replace(/\//g, '');
+                const valueB = b.value.replace(/\//g, '');
+
+                return valueA.localeCompare(valueB);
+            });
+            let dirsForSelect = JSON.parse(dirs_for_line_info).map((item: any) => ({ value: item, label: item }));
+            let dirsForSelectSet = new Set(dirsForSelect.map((item: any) => item.value));
+            console.log(dirsForSelect);
+            setCurrentSelectDirs(dirsForSelect);
+            // Set the selectDirOptions to the sorted options
+            setSelectDirOptions(selectDirOptions);
+            // Set the totalDirsLineData to the dirLocInfo
             setTotalDirsLineData(dirLocInfo);
+            // Set the totalLines to the line_statistic_total_count
             setTotalLines(line_statistic_total_count);
+
+            // Filter the dirsLineData to only include the root directory
+            const filteredDirs = dirLocInfo.filter((item: any) => dirsForSelectSet.has(item.dir_name));
+            console.log(filteredDirs);
+            // Set the dirsLineData to the filteredDirs
+            setDirsLineData(filteredDirs);
         }
     }
-    const optionsForLoc = () => {
-        if (!lineData || lineData.length === 0) {
-            return {
 
-                xAxis: {
-                    type: 'category',
-                    data: []
-                },
-                yAxis: {
-                    type: 'value',
-                },
-                series: []
-            };
-        }
-        return {
-            title: {
-                text: t("linePage.linesOfCodeText"),
-            },
-            tooltip: {
-                trigger: 'axis',
-                axisPointer: {
-                    type: 'cross',
-                    label: {
-                        backgroundColor: '#6a7985'
-                    }
-                }
-            },
-            legend: {
-                data: "sss",
-            },
-
-            grid: {
-                left: '3%',
-                right: '4%',
-                bottom: '3%',
-                containLabel: true
-            },
-            xAxis: [
-                {
-                    type: 'time',
-                    // boundaryGap: false,
-
-                }
-            ],
-
-            series: {
-                // name: "task.sync_task_name",  // Sync task name for each series
-                data: lineData,      // Corresponding logs data
-                type: 'line',                // Type of chart (bar in this case)
-                emphasis: {
-                    focus: 'series'
-                },
-                showSymbol: false,
-            }
-        };
-    }
     const optionsForLocByDirs = () => {
         if (!dirsLineData || dirsLineData.length === 0) {
             return {
@@ -204,15 +160,21 @@ export function LineInfoPage() {
         };
     }
     const handleOnChange = async (value: any) => {
+        console.log(value);
+        const valueArray = value.map((item: any) => item.value);
+        const { response_code, response_msg } = JSON.parse(await invoke("save_dirs_for_line_info", { dirs: valueArray }));
+
         if (value.length === 0) {
             console.log(value);
             setDirsLineData([]);
+            setCurrentSelectDirs([]);
             return;
         }
         const valueSet = new Set(value.map((item: any) => item.value));
         const filteredDirs = totalDirsLineData.filter((item: any) => valueSet.has(item.dir_name));
         console.log(filteredDirs);
         setDirsLineData(filteredDirs);
+        setCurrentSelectDirs(value);
 
     }
     return (
@@ -224,22 +186,24 @@ export function LineInfoPage() {
                             <p className="basis-2/12 text-lg font-bold">{t("linePage.totalLinesText")}</p>
                             <p className="text-lg">{totalLines}</p>
                         </div>
-
                         <Separator />
-                        <div className="basis-1/2 bg-white	rounded-lg p-4">
-                            <ReactECharts option={optionsForLoc()} />
+                        <div className="flex flex-col gap-4">
+                            <div className="basis-1/2 text-lg font-bold text-center">Line Of Code By Directories</div>
+                            <div className="grid grid-cols-12 gap-4 px-16  border-dashed border-2 border-indigo-600 bg-gray-200">
+                                <p className="text-right col-start-1 col-end-2 text-red-500 font-bold">"/":</p>
+                                <p className="text-left col-start-2 col-end-10">means the root directory</p>
+                                <p className="text-right col-start-1 col-end-2 text-red-500 font-bold" >"/src":</p>
+                                <p className="text-left col-start-2 col-end-10">means the src directory in the root directory</p>
+                            </div>
                         </div>
-                        <Separator />
-                        <span className="basis-1/2 text-lg font-bold text-center">Line Of Code By Directories</span>
-
-                        <span className="basis-1/2 text-lg font-bold text-left">Please Select the Directories</span>
+                        <span className="basis-1/2 text-lg font-bold text-left">Choose Directories or Search Keywords to Select</span>
                         <div className="px-16">
                             <Select
                                 closeMenuOnSelect={false}
                                 components={animatedComponents}
-                                defaultValue={dirOptions ? dirOptions[0] : null}
+                                value={currentSelectDirs}
                                 isMulti
-                                options={dirOptions}
+                                options={selectDirOptions}
 
                                 isSearchable={true}
                                 onChange={handleOnChange}
@@ -248,8 +212,8 @@ export function LineInfoPage() {
                         <div className="basis-1/2 bg-white	rounded-lg p-4">
                             <ReactECharts option={optionsForLocByDirs()}
                                 ref={chartRef} />
-
                         </div>
+
                     </CardContent>
 
                 </Card>

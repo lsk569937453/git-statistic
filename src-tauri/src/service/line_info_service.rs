@@ -92,6 +92,14 @@ pub fn save_line_info(
     values (?1,?2)",
             params!["dir_loc_info", lines_count_data],
         )?;
+        {
+            let init_dirs = serde_json::to_string(&vec!["/"])?;
+            connections.execute(
+                "insert into git_line_info (quota_name,quota_value)
+    values (?1,?2)",
+                params!["dirs_for_line_info", init_dirs],
+            )?;
+        }
     };
 
     Ok(())
@@ -161,4 +169,17 @@ fn map_to_list(
         sorted_vec[i].count += sorted_vec[i - 1].count;
     }
     Ok(sorted_vec)
+}
+pub fn save_dirs_for_line_info_with_error(
+    state: State<AppState>,
+    dirs: Vec<String>,
+) -> Result<(), anyhow::Error> {
+    let sql_lite = state.pool.get()?;
+    let connection = &sql_lite;
+    let dirs_str = serde_json::to_string(&dirs)?;
+    connection.execute(
+        "REPLACE INTO git_line_info (quota_name, quota_value) VALUES (?1, ?2)",
+        params!["dirs_for_line_info", dirs_str],
+    )?;
+    Ok(())
 }

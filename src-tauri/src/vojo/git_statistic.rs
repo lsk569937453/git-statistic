@@ -587,11 +587,11 @@ pub fn get_dirs(input: &str) -> Vec<String> {
     if splits.is_empty() || splits.len() == 1 {
         return results;
     }
-
-    let mut temp = splits[0].to_string();
+    results.push("/".to_string());
+    let mut temp = format!("/{}", splits[0]);
     results.push(temp.clone());
     for i in 1..(splits.len() - 1) {
-        let current = format!("{}/{}", temp, splits[i]);
+        let current = format!("{}/{}/", temp, splits[i]);
         results.push(current.clone());
         temp = current;
     }

@@ -17,7 +17,7 @@ use tauri::Manager;
 fn main() -> Result<(), anyhow::Error> {
     let app_state = AppState::new()?;
     tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
+        .plugin(tauri_plugin_single_instance::init(|app, _, _| {
             let _ = app
                 .get_webview_window("main")
                 .expect("no main window")
@@ -27,12 +27,6 @@ fn main() -> Result<(), anyhow::Error> {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .manage(app_state)
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event.clone() {
-                window.hide().unwrap();
-                api.prevent_close();
-            }
-        })
         .plugin(
             //C:\Users\56993\AppData\Local\com.lsk.gitstatistic\logs`
             tauri_plugin_log::Builder::default()
@@ -50,6 +44,7 @@ fn main() -> Result<(), anyhow::Error> {
             get_line_info,
             get_tag_info,
             cancel_init_task,
+            save_dirs_for_line_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

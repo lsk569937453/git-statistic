@@ -194,14 +194,14 @@ export function Menu() {
                             </>}
                             {i18n.language === 'en' && <>
                                 <p className="text-right">Status:</p>
-                                <p>{progressValue}% completed</p>
+                                <p><span className="font-bold text-green-500">{progressValue}%</span> completed</p>
                             </>}
 
                             <p className="text-right">{t("mainDialog.taskStatus")}:</p>
-                            <p>{currentGitProcess}</p>
+                            <p className="font-bold text-green-500">{currentGitProcess}</p>
 
                             <p className="text-right">{t("mainDialog.totalTasks")}:</p>
-                            <p>{totalGitProcess}</p>
+                            <p className="font-bold text-blue-600">{totalGitProcess}</p>
                         </div>
 
                     </div>
