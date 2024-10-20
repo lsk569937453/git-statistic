@@ -13,7 +13,7 @@ use super::base_info_service::get_base_info_with_error;
 use super::commit_info_service::get_commit_info_with_error;
 use super::file_info_service::get_files_info_with_error;
 use super::git_service::get_init_status_with_error;
-use super::line_info_service::get_line_info_with_error;
+use super::line_info_service::{get_line_info_with_error, save_dirs_for_line_info_with_error};
 use super::tags_info_service::get_tags_info_with_error;
 #[tauri::command]
 pub fn get_base_info(state: State<AppState>) -> String {
@@ -189,6 +189,26 @@ pub fn init_git_async(state: State<AppState>, repo_path: String) -> String {
 #[tauri::command]
 pub fn get_about_version() -> String {
     match get_about_version_with_error() {
+        Ok(item) => {
+            let res = BaseResponse {
+                response_code: 0,
+                response_msg: item,
+            };
+            serde_json::to_string(&res).unwrap()
+        }
+        Err(e) => {
+            let res = BaseResponse {
+                response_code: 1,
+                response_msg: e.to_string(),
+            };
+            serde_json::to_string(&res).unwrap()
+        }
+    }
+}
+
+#[tauri::command]
+pub fn save_dirs_for_line_info(state: State<AppState>, dirs: Vec<String>) -> String {
+    match save_dirs_for_line_info_with_error(state, dirs) {
         Ok(item) => {
             let res = BaseResponse {
                 response_code: 0,
