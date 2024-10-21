@@ -2,7 +2,7 @@
 [![build](https://github.com/printfn/fend/workflows/build/badge.svg)](https://github.com/lsk569937453/git-statistic/actions/workflows/release.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Git-Statistic is a tool for git project.It could be used to get statistics of git project.
+Git-Statistic is a potential powerful tool designed for Git projects, providing comprehensive statistics and insights. 
 ## Video Preview
  
 <video width="320" height="240" controls>
